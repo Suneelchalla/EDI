@@ -254,6 +254,10 @@ code,.mono{font-family:var(--mono);font-size:.88em}
 .edifact .eln .r{color:var(--muted)}
 .seg-explain{margin-top:10px;padding:10px 12px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:0 8px 8px 0;font-size:13px;color:var(--text);line-height:1.5}
 .seg-explain b{color:var(--accent)}
+.msgtabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.msgtab{border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:5px 12px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.msgtab:hover{border-color:var(--accent-2)}
+.msgtab[aria-pressed="true"]{border-color:var(--accent);background:var(--raise);color:var(--accent)}
 /* message families */
 .fam-group{margin:12px 0 6px;font-family:var(--cond);font-weight:600;font-size:13.5px;color:var(--text)}
 .fam-group:first-child{margin-top:0}
@@ -345,14 +349,18 @@ code,.mono{font-family:var(--mono);font-size:.88em}
 .layer-body{display:none;padding:2px 0 8px 14px;border-left:1px solid var(--line-soft);margin-left:12px}
 .layer-body.open{display:block}
 .screen{
-  display:flex;align-items:flex-start;gap:10px;padding:9px 10px;border-radius:9px;
-  border:1px solid transparent;cursor:pointer;
+  display:flex;align-items:flex-start;gap:8px;padding:9px 10px;border-radius:9px;
+  border:1px solid transparent;cursor:pointer;transition:background .12s,border-color .12s;
 }
-.screen:hover{border-color:var(--line);background:var(--panel-2)}
+.screen::before{content:"▸";color:var(--faint);font-size:10px;line-height:1.6;transition:transform .15s,color .15s;flex:0 0 auto}
+.screen:hover{border-color:var(--accent-2);background:var(--panel-2)}
+.screen:hover::before{color:var(--accent-2)}
+.screen.open{background:var(--panel-2);border-color:var(--line)}
+.screen.open::before{transform:rotate(90deg);color:var(--accent)}
 .screen .sname{font-size:13.5px;font-weight:500}
 .screen .sname .grp{font-family:var(--mono);font-size:10px;color:var(--faint);display:block;margin-top:1px}
 .screen .right{margin-left:auto;flex:0 0 auto}
-.screen .desc{display:none;font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+.screen .desc{display:none;font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.45;padding:8px 10px;background:var(--panel);border-left:2px solid var(--accent-dim);border-radius:0 6px 6px 0}
 .screen.open .desc{display:block}
 .screen .links{margin-top:7px;display:flex;flex-wrap:wrap;gap:5px}
 .chip{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:6px;background:var(--panel-2);border:1px solid var(--line-soft);color:var(--muted)}
@@ -432,6 +440,7 @@ code,.mono{font-family:var(--mono);font-size:.88em}
 
       <div class="pbtabs" id="pbtabs">
         <button class="pbtab" data-pb="foundations" aria-pressed="true">Foundations <span class="mono">start here</span></button>
+        <button class="pbtab" data-pb="standards" aria-pressed="false">Standards <span class="mono">global reference</span></button>
         <button class="pbtab" data-pb="coarri" aria-pressed="false">COARRI → EMS <span class="mono">inbound</span></button>
         <button class="pbtab" data-pb="igm" aria-pressed="false">IGM → Customs <span class="mono">outbound</span></button>
         <button class="pbtab" data-pb="outbound" aria-pressed="false">Outbound → Tracker <span class="mono">control flow</span></button>
@@ -461,20 +470,17 @@ code,.mono{font-family:var(--mono);font-size:.88em}
           </div>
         </div>
 
-        <div class="card" data-searchable data-prov="standard" data-keywords="edifact message anatomy sample unb unh bgm tdt loc eqd unt segment interactive example coarri iso 6346 un locode">
-          <div class="hd"><h3>Anatomy of an EDIFACT message</h3><span class="meta">tap any line</span></div>
+        <div class="card" data-searchable data-prov="standard" data-keywords="edifact message anatomy sample unb unh bgm tdt loc eqd mea nad gid rff dtm segment interactive example coarri coprar iftmin vermas iso 6346 un locode multi message explorer">
+          <div class="hd"><h3>Anatomy of an EDIFACT message</h3><span class="meta">pick a message, tap a line</span></div>
           <div class="bd">
-            <p style="margin:0 0 10px;color:var(--muted);font-size:13.5px">A (simplified) COARRI arriving from a terminal. Tap each line to see its job — notice how the port and container lines are exactly what your mappings translate.</p>
-            <div class="edifact" id="edifact">
-              <div class="eln" data-seg="unb"><span class="t">UNB</span><span class="r">UNB+UNOA:3+LINE:14+TERMINAL:14+260927:1420+00000001'</span></div>
-              <div class="eln" data-seg="unh"><span class="t">UNH</span><span class="r">UNH+1+COARRI:D:95B:UN'</span></div>
-              <div class="eln" data-seg="bgm"><span class="t">BGM</span><span class="r">BGM+119+SN2587+9'</span></div>
-              <div class="eln" data-seg="tdt"><span class="t">TDT</span><span class="r">TDT+20++1++CARRIER:172::MOL'</span></div>
-              <div class="eln" data-seg="loc"><span class="t">LOC</span><span class="r">LOC+9+INMAA:139'</span></div>
-              <div class="eln" data-seg="eqd"><span class="t">EQD</span><span class="r">EQD+CN+ABCD1234567+22G1:102'</span></div>
-              <div class="eln" data-seg="unt"><span class="t">UNT</span><span class="r">UNT+6+1'</span></div>
-              <div class="eln" data-seg="unz"><span class="t">UNZ</span><span class="r">UNZ+1+00000001'</span></div>
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13.5px">Four real liner messages, simplified. Tap a message, then tap any line to see its job — watch how the port and container lines are exactly what your mappings translate.</p>
+            <div class="msgtabs" id="msgtabs">
+              <button class="msgtab" data-msg="coarri" aria-pressed="true">COARRI</button>
+              <button class="msgtab" data-msg="coprar">COPRAR</button>
+              <button class="msgtab" data-msg="iftmin">IFTMIN</button>
+              <button class="msgtab" data-msg="vermas">VERMAS</button>
             </div>
+            <div class="edifact" id="edifact"></div>
             <div class="seg-explain" id="segExplain">Tap a segment above to see what it does.</div>
           </div>
         </div>
@@ -548,6 +554,98 @@ code,.mono{font-family:var(--mono);font-size:.88em}
         </div>
 
       </div><!-- /pb-foundations -->
+
+      <div id="pb-standards" class="pb hidden">
+
+        <div class="card" data-searchable data-prov="standard" data-keywords="segment dictionary edifact unb unh bgm dtm nad loc rff tdt eqd mea tmp rng gid pac dgs ftx cnt unt unz purpose">
+          <div class="hd"><h3>Segment dictionary</h3><span class="prov std"><span class="dot std"></span>UN/EDIFACT</span></div>
+          <div class="bd" style="padding:14px 16px 6px">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13px">The building blocks. Each EDIFACT segment is a 3-letter tag holding related data elements — here are the ones you'll meet across liner messages.</p>
+            <div class="cattable">
+              <table class="cat" style="min-width:560px">
+                <thead><tr><th>Seg</th><th>Purpose</th><th>Typical use</th></tr></thead>
+                <tbody>
+                  <tr><td class="ty">UNB</td><td>Interchange header</td><td>Sender, receiver, date, control ref</td></tr>
+                  <tr><td class="ty">UNH</td><td>Message header</td><td>type:version:release:agency</td></tr>
+                  <tr><td class="ty">BGM</td><td>Beginning of message</td><td>Document number + message function</td></tr>
+                  <tr><td class="ty">DTM</td><td>Date / time / period</td><td>qualifier:value:format (137 = doc date)</td></tr>
+                  <tr><td class="ty">NAD</td><td>Name &amp; address</td><td>Party role (CZ shipper, CN consignee) + id</td></tr>
+                  <tr><td class="ty">LOC</td><td>Place / location</td><td>Port/place (9 discharge, 88 loading)</td></tr>
+                  <tr><td class="ty">RFF</td><td>Reference</td><td>Booking / voyage / BL reference</td></tr>
+                  <tr><td class="ty">TDT</td><td>Transport details</td><td>Stage, mode, means, carrier, vessel/voyage</td></tr>
+                  <tr><td class="ty">EQD</td><td>Equipment details</td><td>Container no + ISO 6346 size/type</td></tr>
+                  <tr><td class="ty">EQN</td><td>Number of units</td><td>Count of equipment</td></tr>
+                  <tr><td class="ty">SEL</td><td>Seal number</td><td>Container seal</td></tr>
+                  <tr><td class="ty">MEA</td><td>Measurements</td><td>Weight / volume — VGM lives here</td></tr>
+                  <tr><td class="ty">TMP</td><td>Temperature</td><td>Reefer set temperature</td></tr>
+                  <tr><td class="ty">RNG</td><td>Range</td><td>Temperature min/max range</td></tr>
+                  <tr><td class="ty">GID</td><td>Goods item details</td><td>Number &amp; type of packages</td></tr>
+                  <tr><td class="ty">PAC</td><td>Packaging</td><td>Package form / type</td></tr>
+                  <tr><td class="ty">PCI</td><td>Package identification</td><td>Marks &amp; numbers</td></tr>
+                  <tr><td class="ty">DGS</td><td>Dangerous goods</td><td>IMO class, UN number</td></tr>
+                  <tr><td class="ty">FTX</td><td>Free text</td><td>Description / remarks</td></tr>
+                  <tr><td class="ty">CNT</td><td>Control total</td><td>Counts for integrity checking</td></tr>
+                  <tr><td class="ty">UNT</td><td>Message trailer</td><td>Segment count + message ref</td></tr>
+                  <tr><td class="ty">UNZ</td><td>Interchange trailer</td><td>Message count + control ref</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="footnote" style="padding-bottom:8px">Tap through the anatomy explorer in Foundations to see several of these in a real message.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="standard" data-keywords="edifact x12 crosswalk equivalent 300 301 304 309 312 315 322 323 324 350 824 997 856 iftmin cuscar coarri coprar baplie vermas contrl aperak ansi">
+          <div class="hd"><h3>EDIFACT ↔ ANSI X12 crosswalk</h3><span class="prov std"><span class="dot std"></span>UN/EDIFACT · ANSI X12</span></div>
+          <div class="bd" style="padding:14px 16px 6px">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13px">EDIFACT dominates global liner trade; ANSI X12 is the North-American standard (you use it with GRIFFIN). Same jobs, different syntax — here's the ocean/transport map.</p>
+            <div class="cattable">
+              <table class="cat" style="min-width:560px">
+                <thead><tr><th>EDIFACT</th><th>ANSI X12</th><th>What it is</th></tr></thead>
+                <tbody>
+                  <tr><td class="ty">IFTMBF / IFTMBP</td><td class="rg">300</td><td>Booking request (Ocean)</td></tr>
+                  <tr><td class="ty">IFTMBC</td><td class="rg">301</td><td>Booking confirmation (Ocean)</td></tr>
+                  <tr><td class="ty">(cancellation)</td><td class="rg">303</td><td>Booking cancellation (Ocean)</td></tr>
+                  <tr><td class="ty">IFTMIN</td><td class="rg">304</td><td>Shipping instructions</td></tr>
+                  <tr><td class="ty">IFTMCS</td><td class="rg">858</td><td>Shipment info / bill of lading</td></tr>
+                  <tr><td class="ty">IFTSTA</td><td class="rg">315</td><td>Status details (Ocean)</td></tr>
+                  <tr><td class="ty">IFTMAN</td><td class="rg">312</td><td>Arrival notice (Ocean)</td></tr>
+                  <tr><td class="ty">CUSCAR</td><td class="rg">309</td><td>Customs manifest / cargo report</td></tr>
+                  <tr><td class="ty">CUSRES</td><td class="rg">350 / 355</td><td>Customs status / acceptance-rejection</td></tr>
+                  <tr><td class="ty">COPRAR · COARRI · CODECO</td><td class="rg">322</td><td>Terminal operations &amp; ramp activity</td></tr>
+                  <tr><td class="ty">BAPLIE</td><td class="rg">324</td><td>Vessel stow plan (Ocean)</td></tr>
+                  <tr><td class="ty">IFTSAI</td><td class="rg">323</td><td>Vessel schedule &amp; itinerary (Ocean)</td></tr>
+                  <tr><td class="ty">VERMAS</td><td class="rg">—</td><td>VGM — no direct X12; via booking/SI or portal</td></tr>
+                  <tr><td class="ty">CONTRL</td><td class="rg">997</td><td>Functional acknowledgment</td></tr>
+                  <tr><td class="ty">APERAK</td><td class="rg">824</td><td>Application advice / error</td></tr>
+                  <tr><td class="ty">INVOIC</td><td class="rg">810</td><td>Invoice</td></tr>
+                  <tr><td class="ty">DESADV</td><td class="rg">856</td><td>Despatch advice / ASN</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="footnote" style="padding-bottom:8px">Equivalences are functional, not byte-for-byte — a translator/VAN maps between the two.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="standard" data-keywords="standards regulations governance un cefact smdg ansi wco imo dcsa solas vgm ams ace ens ics2 24 hour rule bodies">
+          <div class="hd"><h3>Standards &amp; regulations</h3><span class="prov std"><span class="dot std"></span>global</span></div>
+          <div class="bd">
+            <p style="margin:0 0 8px;color:var(--muted);font-size:13px">Who governs the messages:</p>
+            <div class="fam">
+              <div class="f"><span class="code">UN/CEFACT</span><div class="fd">Maintains the UN/EDIFACT directories, released twice a year (e.g. D.23A / D.23B).</div></div>
+              <div class="f"><span class="code">SMDG</span><div class="fd">Publishes the container/shipping message guides: COPRAR, COARRI, CODECO, BAPLIE, MOVINS, VERMAS, COPARN.</div></div>
+              <div class="f"><span class="code">ANSI ASC X12</span><div class="fd">The North-American EDI standard — the 3xx ocean transaction set.</div></div>
+              <div class="f"><span class="code">WCO</span><div class="fd">World Customs Organization — the Data Model behind customs filings.</div></div>
+              <div class="f"><span class="code">IMO</span><div class="fd">International Maritime Organization — SOLAS, including the VGM rule.</div></div>
+              <div class="f"><span class="code">DCSA</span><div class="fd">Digital Container Shipping Association — modern API &amp; electronic-BL standards.</div></div>
+            </div>
+            <p style="margin:14px 0 6px;color:var(--muted);font-size:13px">The rules that drive the messages:</p>
+            <div class="callout"><b>SOLAS VGM.</b> IMO, SOLAS Ch VI Reg 2 — in force <b>1 July 2016</b>. The shipper named on the BL must declare a verified container weight before loading; filed via <b>VERMAS</b> or a carrier portal. No VGM = the box isn't loaded.</div>
+            <div class="callout info"><b>Advance manifests.</b> <b>US AMS / ACE</b> — the 24-hour advance cargo rule to CBP, filed as EDIFACT <b>CUSCAR</b> or ANSI <b>309</b>. <b>EU ICS2 / ENS</b> — Entry Summary Declaration with advance cargo data before arrival.</div>
+            <div class="callout"><b>Where it's heading.</b> Alongside classic EDI, the industry is standardizing on <b>DCSA APIs</b> and the electronic bill of lading (eBL) — so expect JSON/REST to sit next to EDIFACT/X12 over time.</div>
+          </div>
+        </div>
+
+      </div><!-- /pb-standards -->
 
       <div id="pb-coarri" class="pb hidden">
       <div class="card" data-searchable data-prov="documented" data-keywords="coarri ems classify mapping business duplicate gate">
@@ -1620,25 +1718,123 @@ document.querySelectorAll(".classify").forEach(group=>{
 });
 
 /* ---------------- interactive EDIFACT sample ---------------- */
-const SEGDEF={
-  unb:"<b>UNB — Interchange header.</b> The outer envelope: who's sending (LINE), who's receiving (TERMINAL), date/time, and a control reference that UNZ must echo back.",
-  unh:"<b>UNH — Message header.</b> Starts one message and names it: COARRI, directory D, release 95B, agency UN. This is how the receiver knows which message type and version to parse.",
-  bgm:"<b>BGM — Beginning of message.</b> Document number (SN2587) and message function (9 = original). Amendments and cancellations reuse BGM with a different function code.",
-  tdt:"<b>TDT — Transport details.</b> The carrier / voyage this report belongs to. In LRP this is the Service → Vessel → Voyage context.",
-  loc:"<b>LOC — Location.</b> A port, here as UN/LOCODE <span class='k-code'>INMAA</span> (Chennai). This is exactly the value your Port Code Mapping translates to the customs port code.",
-  eqd:"<b>EQD — Equipment details.</b> Container ABCD1234567 with ISO 6346 size/type <span class='k-code'>22G1</span> (20ft standard). Your ISO / Equipment mapping converts this to the code the partner expects.",
-  unt:"<b>UNT — Message trailer.</b> Closes the message: segment count and the message reference from UNH — an integrity check.",
-  unz:"<b>UNZ — Interchange trailer.</b> Closes the envelope: number of messages and the control reference from UNB."
+const MSGSAMPLES={
+  coarri:{lines:[
+    ["unb","UNB+UNOA:3+LINE:14+TERMINAL:14+260927:1420+00000001'"],
+    ["unh","UNH+1+COARRI:D:95B:UN'"],
+    ["bgm","BGM+119+SN2587+9'"],
+    ["tdt","TDT+20++1++CARRIER:172::MOL'"],
+    ["loc","LOC+9+INMAA:139'"],
+    ["eqd","EQD+CN+ABCD1234567+22G1:102'"],
+    ["unt","UNT+6+1'"],
+    ["unz","UNZ+1+00000001'"]
+  ],defs:{
+    unb:"<b>UNB — Interchange header.</b> Sender (LINE), receiver (TERMINAL), date/time and a control reference UNZ must echo back.",
+    unh:"<b>UNH — Message header.</b> Names it: COARRI, directory D, release 95B, agency UN — a terminal→line load/discharge report.",
+    bgm:"<b>BGM — Beginning of message.</b> Document SN2587, function 9 = original.",
+    tdt:"<b>TDT — Transport details.</b> Carrier / voyage — the Service→Vessel→Voyage context in LRP.",
+    loc:"<b>LOC — Location.</b> Discharge port as UN/LOCODE <span class='k-code'>INMAA</span> (Chennai) — what Port Mapping translates.",
+    eqd:"<b>EQD — Equipment.</b> Container ABCD1234567, ISO 6346 type <span class='k-code'>22G1</span> (20ft standard) — what ISO/Equipment mapping translates.",
+    unt:"<b>UNT — Message trailer.</b> Segment count + message reference (integrity check).",
+    unz:"<b>UNZ — Interchange trailer.</b> Message count + the UNB control reference."
+  }},
+  coprar:{lines:[
+    ["unb","UNB+UNOA:3+LINE:14+TERMINAL:14+260927:0900+00000045'"],
+    ["unh","UNH+1+COPRAR:D:95B:UN'"],
+    ["bgm","BGM+34+CP7788+9'"],
+    ["tdt","TDT+20++1++CARRIER:172::VESSEL'"],
+    ["loc","LOC+9+SGSIN:139'"],
+    ["rff","RFF+VON:054W'"],
+    ["eqd","EQD+CN+MSKU7654321+45G1:102+2+5'"],
+    ["dtm","DTM+178:2609270900:203'"],
+    ["unt","UNT+8+1'"],
+    ["unz","UNZ+1+00000045'"]
+  ],defs:{
+    unb:"<b>UNB.</b> LINE → TERMINAL, with control reference.",
+    unh:"<b>UNH.</b> COPRAR, D:95B:UN — a load/discharge <i>order</i> (COARRI is the matching report).",
+    bgm:"<b>BGM.</b> Order number CP7788, function 9 = original.",
+    tdt:"<b>TDT.</b> Vessel &amp; voyage the order applies to.",
+    loc:"<b>LOC.</b> Discharge port <span class='k-code'>SGSIN</span> (Singapore).",
+    rff:"<b>RFF.</b> Voyage reference (VON 054W).",
+    eqd:"<b>EQD.</b> Container MSKU7654321, ISO <span class='k-code'>45G1</span> (40ft high-cube), status full.",
+    dtm:"<b>DTM.</b> Operation date/time.",
+    unt:"<b>UNT.</b> Segment count + message reference.",
+    unz:"<b>UNZ.</b> Message count + control reference."
+  }},
+  iftmin:{lines:[
+    ["unb","UNB+UNOA:3+SHIPPER:14+LINE:14+260927:1100+00000078'"],
+    ["unh","UNH+1+IFTMIN:D:99B:UN'"],
+    ["bgm","BGM+610+SI556677+9'"],
+    ["cta","CTA+IC+:JANE DOE'"],
+    ["nadcz","NAD+CZ+++ACME EXPORTS LTD'"],
+    ["nadcn","NAD+CN+++GLOBAL IMPORTS INC'"],
+    ["tdt","TDT+20++1++LINE:172'"],
+    ["loc88","LOC+88+INMAA:139'"],
+    ["loc7","LOC+7+NLRTM:139'"],
+    ["gid","GID+1+10:CT'"],
+    ["ftx","FTX+AAA+++ELECTRONICS'"],
+    ["unt","UNT+11+1'"],
+    ["unz","UNZ+1+00000078'"]
+  ],defs:{
+    unb:"<b>UNB.</b> SHIPPER → LINE.",
+    unh:"<b>UNH.</b> IFTMIN, D:99B:UN — the shipping instruction (ANSI X12 equivalent: 304).",
+    bgm:"<b>BGM.</b> Instruction 610, reference SI556677.",
+    cta:"<b>CTA — Contact.</b> Jane Doe (IC = information contact).",
+    nadcz:"<b>NAD (CZ) — Consignor / shipper.</b> ACME Exports Ltd.",
+    nadcn:"<b>NAD (CN) — Consignee.</b> Global Imports Inc.",
+    tdt:"<b>TDT.</b> Carrier / main-carriage.",
+    loc88:"<b>LOC (88) — Place of loading.</b> <span class='k-code'>INMAA</span> (Chennai).",
+    loc7:"<b>LOC (7) — Place of delivery.</b> <span class='k-code'>NLRTM</span> (Rotterdam).",
+    gid:"<b>GID — Goods item.</b> 10 cartons (CT).",
+    ftx:"<b>FTX — Free text.</b> Commodity description: ELECTRONICS.",
+    unt:"<b>UNT.</b> Segment count + message reference.",
+    unz:"<b>UNZ.</b> Message count + control reference."
+  }},
+  vermas:{lines:[
+    ["unb","UNB+UNOA:3+SHIPPER:14+LINE:14+260927:1300+00000090'"],
+    ["unh","UNH+1+VERMAS:D:16A:UN'"],
+    ["bgm","BGM+745+VG334455+9'"],
+    ["rff","RFF+BN:BKG123456'"],
+    ["eqd","EQD+CN+TCLU1234567+22G1:102'"],
+    ["mea","MEA+AAE+VGM+KGM:24500'"],
+    ["nad","NAD+ZZZ+++ACME EXPORTS'"],
+    ["dtm","DTM+798:260927:102'"],
+    ["unt","UNT+8+1'"],
+    ["unz","UNZ+1+00000090'"]
+  ],defs:{
+    unb:"<b>UNB.</b> SHIPPER → LINE.",
+    unh:"<b>UNH.</b> VERMAS, D:16A:UN — the Verified Gross Mass (SOLAS VGM) report.",
+    bgm:"<b>BGM.</b> VGM message 745, reference VG334455.",
+    rff:"<b>RFF.</b> Booking number BKG123456.",
+    eqd:"<b>EQD.</b> Container TCLU1234567 (ISO 22G1).",
+    mea:"<b>MEA — Measurement.</b> The point of the message: VGM = <span class='k-code'>24,500 KGM</span> (verified gross mass).",
+    nad:"<b>NAD.</b> Responsible / authorised party — ACME Exports.",
+    dtm:"<b>DTM.</b> Weighing date.",
+    unt:"<b>UNT.</b> Segment count + message reference.",
+    unz:"<b>UNZ.</b> Message count + control reference."
+  }}
 };
 const ediEl=document.getElementById("edifact");
-if(ediEl){
-  const exp=document.getElementById("segExplain");
-  ediEl.querySelectorAll(".eln").forEach(l=>l.addEventListener("click",()=>{
+const segExp=document.getElementById("segExplain");
+function renderMsg(key){
+  const m=MSGSAMPLES[key]; if(!m||!ediEl)return;
+  ediEl.innerHTML=m.lines.map(l=>`<div class="eln" data-seg="${l[0]}"><span class="t">${l[1].split('+')[0]}</span><span class="r">${l[1]}</span></div>`).join("");
+  if(segExp)segExp.innerHTML="Tap a segment above to see what it does.";
+  ediEl.querySelectorAll(".eln").forEach(el=>el.addEventListener("click",()=>{
     ediEl.querySelectorAll(".eln").forEach(x=>x.classList.remove("active"));
-    l.classList.add("active");
-    exp.innerHTML=SEGDEF[l.dataset.seg]||"";
+    el.classList.add("active");
+    if(segExp)segExp.innerHTML=m.defs[el.dataset.seg]||"";
   }));
 }
+const msgtabs=document.getElementById("msgtabs");
+if(msgtabs){
+  msgtabs.querySelectorAll(".msgtab").forEach(b=>b.addEventListener("click",()=>{
+    msgtabs.querySelectorAll(".msgtab").forEach(x=>x.setAttribute("aria-pressed","false"));
+    b.setAttribute("aria-pressed","true");
+    renderMsg(b.dataset.msg);
+  }));
+}
+renderMsg("coarri");
 
 /* ---------------- ticket trainer ---------------- */
 const TICKETS=[
@@ -1884,6 +2080,12 @@ document.querySelectorAll(".pbtab").forEach(t=>{
     t.setAttribute("aria-pressed","true");
     activePb=t.dataset.pb;
     showPb();
+    const pb=document.getElementById("pb-"+activePb);
+    if(pb){
+      pb.scrollIntoView({behavior:"smooth",block:"nearest"});
+      const first=pb.querySelector(".card");
+      if(first){first.classList.add("flash");setTimeout(()=>first.classList.remove("flash"),1400);}
+    }
   });
 });
 
@@ -2089,8 +2291,9 @@ document.getElementById("themeBtn").addEventListener("click",()=>setTheme(root.g
 /* ---------------- restore prefs ---------------- */
 try{
   const t=localStorage.getItem("edi.theme"); if(t)setTheme(t);
-  const p=localStorage.getItem("edi.prov");
-  if(p){const b=document.querySelector(`#provSeg button[data-prov="${p}"]`); if(b)b.click();}
+  // Note: the provenance filter is intentionally NOT restored — the app always
+  // opens showing ALL content, so a remembered filter can never hide cards.
+  localStorage.removeItem("edi.prov");
 }catch(e){}
 </script>
 </body>
