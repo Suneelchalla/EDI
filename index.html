@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LRP EDI Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b131b; --panel:#111c26; --panel-2:#16232f; --raise:#1c2c3a;
+  --line:#243645; --line-soft:#1b2934;
+  --text:#e8eef3; --muted:#93a5b4; --faint:#647585;
+  --accent:#34c3bd; --accent-dim:#1d6f6c; --accent-2:#6ba8e8;
+  --error:#f0616b; --error-dim:#5a2830;
+  --warn:#e3a94a; --warn-dim:#4d3a1c;
+  --ok:#4cc38a; --ok-dim:#1f4a38;
+  --info:#6ba8e8;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --cond:"IBM Plex Sans Condensed",var(--sans);
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+:root[data-theme="light"]{
+  --ink:#eef2f5; --panel:#ffffff; --panel-2:#f4f7f9; --raise:#eaf0f3;
+  --line:#d3dde3; --line-soft:#e3eaef;
+  --text:#132330; --muted:#4f6472; --faint:#8497a3;
+  --accent:#0f8f89; --accent-dim:#bfe6e3; --accent-2:#2b6fc4;
+  --error:#cf2f3a; --error-dim:#f6dcde;
+  --warn:#b57816; --warn-dim:#f4e6cc;
+  --ok:#1c8a5c; --ok-dim:#d3ecdf;
+  --info:#2b6fc4;
+}
+*{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 70px);-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--ink);color:var(--text);font-family:var(--sans);
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(1200px 600px at 78% -10%,rgba(52,195,189,.07),transparent 60%);
+}
+a{color:var(--accent-2);text-decoration:none}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.01em}
+button{font-family:inherit;cursor:pointer;color:inherit}
+::selection{background:var(--accent-dim);color:var(--text)}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 20px 10px;
+  background:color-mix(in srgb,var(--ink) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft);
+}
+.topbar-in{max-width:1440px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand .mark{
+  font-family:var(--cond);font-weight:700;font-size:20px;letter-spacing:.02em;
+  color:var(--text);white-space:nowrap;
+}
+.brand .mark b{color:var(--accent)}
+.brand .sub{color:var(--faint);font-size:12.5px;white-space:nowrap}
+.search{flex:1 1 260px;position:relative;min-width:180px}
+.search input{
+  width:100%;padding:9px 12px 9px 34px;border-radius:9px;
+  background:var(--panel);border:1px solid var(--line);color:var(--text);
+  font-family:var(--sans);font-size:14px;outline:none;
+}
+.search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.6}
+.search .count{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:11px;color:var(--faint)}
+.search .results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:0 16px 48px -14px rgba(0,0,0,.55);max-height:min(72vh,560px);overflow-y:auto;z-index:60;display:none}
+.search .results.show{display:block}
+.results .rgroup{padding:7px 12px;font-size:10px;letter-spacing:.04em;color:var(--faint);font-family:var(--mono);background:var(--panel-2);border-bottom:1px solid var(--line-soft);position:sticky;top:0}
+.results .ritem{display:block;width:100%;text-align:left;padding:9px 12px;border:0;border-bottom:1px solid var(--line-soft);background:transparent;cursor:pointer}
+.results .ritem:last-child{border-bottom:0}
+.results .ritem:hover,.results .ritem.sel{background:var(--raise)}
+.results .ritem .rt{font-size:13px;color:var(--text);font-weight:500;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.results .ritem .rtab{font-family:var(--mono);font-size:9px;color:var(--accent);border:1px solid var(--accent-dim);border-radius:5px;padding:1px 6px;flex:0 0 auto}
+.results .ritem .rsnip{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+.results .rempty{padding:18px 14px;text-align:center;color:var(--faint);font-size:13px}
+.results mark{background:color-mix(in srgb,var(--accent) 32%,transparent);color:var(--text);border-radius:2px;padding:0 1px}
+@keyframes flashk{0%,100%{box-shadow:0 0 0 0 transparent}18%{box-shadow:0 0 0 3px var(--accent),0 0 26px -6px var(--accent)}}
+.flash{animation:flashk 1.5s ease}
+.toggle-theme{
+  border:1px solid var(--line);background:var(--panel);border-radius:9px;
+  width:38px;height:38px;display:grid;place-items:center;flex:0 0 auto;
+}
+.toggle-theme:hover{border-color:var(--accent)}
+
+/* ---------- provenance legend / filter ---------- */
+.provbar{max-width:1440px;margin:12px auto 0;padding:0 20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.provbar .lbl{font-size:12px;color:var(--faint)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{
+  padding:6px 11px;background:transparent;border:0;font-size:12.5px;color:var(--muted);
+  border-right:1px solid var(--line);display:flex;align-items:center;gap:6px;
+}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--raise);color:var(--text)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot.doc{background:var(--accent)} .dot.inf{background:var(--warn)} .dot.gap{background:var(--error)}
+
+/* ---------- hero pipeline ---------- */
+.wrap{max-width:1440px;margin:0 auto;padding:20px}
+.hero{
+  border:1px solid var(--line);border-radius:16px;background:
+  linear-gradient(180deg,var(--panel-2),var(--panel));padding:22px 20px 18px;overflow:hidden;
+}
+.hero h1{font-family:var(--cond);font-size:clamp(24px,4.4vw,40px);line-height:1.02;letter-spacing:0}
+.hero .lede{color:var(--muted);max-width:64ch;margin-top:8px;font-size:15px}
+.hero .lede b{color:var(--text);font-weight:600}
+
+.pipe{margin-top:20px;display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.stage{
+  flex:1 0 auto;min-width:112px;position:relative;text-align:center;
+  padding:12px 10px;border:1px solid var(--line);background:var(--panel);
+  border-radius:11px;margin-right:26px;transition:border-color .18s,transform .18s;
+}
+.stage:last-child{margin-right:0}
+.stage:not(:last-child)::after{
+  content:"";position:absolute;right:-26px;top:50%;width:26px;height:2px;
+  background:linear-gradient(90deg,var(--line),var(--accent-dim));
+}
+.stage .k{font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.04em}
+.stage .n{font-family:var(--cond);font-weight:600;font-size:15px;margin-top:3px;line-height:1.1}
+.stage.gate{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-dim),0 0 26px -8px var(--accent)}
+.stage.gate .n{color:var(--accent)}
+.stage:hover{transform:translateY(-2px);border-color:var(--accent-2)}
+.stage.active{border-color:var(--accent);background:var(--raise)}
+/* one orchestrated load pulse */
+@keyframes flow{0%{left:-6%;opacity:0}12%{opacity:1}88%{opacity:1}100%{left:104%;opacity:0}}
+.pulse{position:absolute;top:0;bottom:0;width:70px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 22%,transparent),transparent);
+  animation:flow 2.6s cubic-bezier(.6,0,.4,1) .3s 1 both;border-radius:12px}
+@media(prefers-reduced-motion:reduce){.pulse{display:none}}
+
+/* ---------- main split ---------- */
+.split{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;margin-top:20px;align-items:start}
+@media(max-width:1000px){.split{grid-template-columns:1fr}}
+.col-head{display:flex;align-items:center;gap:10px;margin:2px 2px 12px}
+.col-head .tag{
+  font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;
+  border:1px solid var(--line);color:var(--muted);
+}
+.col-head.diag .tag{color:var(--accent);border-color:var(--accent-dim)}
+.col-head h2{font-family:var(--cond);font-size:22px}
+.col-head p{margin:0;color:var(--faint);font-size:12.5px}
+
+.card{border:1px solid var(--line);border-radius:14px;background:var(--panel);margin-bottom:16px}
+.card>.hd{padding:14px 16px;border-bottom:1px solid var(--line-soft);display:flex;gap:10px;align-items:center;justify-content:space-between}
+.card>.hd h3{font-size:16px}
+.card>.hd .meta{color:var(--faint);font-size:12px}
+.card>.bd{padding:14px 16px}
+
+/* classify-first */
+.classify{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:560px){.classify{grid-template-columns:1fr}}
+.branch{
+  text-align:left;border:1px solid var(--line);border-radius:11px;background:var(--panel-2);
+  padding:12px;transition:border-color .15s,background .15s;
+}
+.branch:hover{border-color:var(--accent-2)}
+.branch[aria-pressed="true"]{border-color:var(--accent);background:var(--raise)}
+.branch .bt{font-family:var(--cond);font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px}
+.branch .bd2{color:var(--muted);font-size:12.5px;margin-top:6px;line-height:1.45}
+.branch .glyph{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:0 0 auto;font-size:14px}
+.g-map{background:var(--warn-dim);color:var(--warn)}
+.g-biz{background:var(--error-dim);color:var(--error)}
+.g-dup{background:var(--ok-dim);color:var(--ok)}
+
+.detail{margin-top:14px;border-top:1px dashed var(--line);padding-top:14px;display:none}
+.detail.show{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.detail h4{font-size:13.5px;color:var(--text);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.steps{counter-reset:s;margin:0;padding:0;list-style:none}
+.steps li{position:relative;padding:7px 0 7px 34px;border-bottom:1px solid var(--line-soft);font-size:13.5px;color:var(--muted)}
+.steps li:last-child{border-bottom:0}
+.steps li::before{
+  counter-increment:s;content:counter(s);position:absolute;left:0;top:6px;
+  width:22px;height:22px;border-radius:6px;background:var(--panel-2);border:1px solid var(--line);
+  color:var(--accent);font-family:var(--mono);font-size:11px;display:grid;place-items:center;
+}
+.steps li b{color:var(--text);font-weight:600}
+code,.mono{font-family:var(--mono);font-size:.88em}
+.k-code{background:var(--panel-2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--accent-2);font-family:var(--mono);font-size:12px}
+
+/* error taxonomy table */
+.tax{width:100%;border-collapse:collapse}
+.tax thead th{
+  text-align:left;font-size:11px;color:var(--faint);font-weight:500;
+  padding:8px 10px;border-bottom:1px solid var(--line);position:sticky;
+}
+.tax tbody tr{border-bottom:1px solid var(--line-soft);cursor:pointer}
+.tax tbody tr:hover{background:var(--panel-2)}
+.tax td{padding:9px 10px;vertical-align:top;font-size:13.5px}
+.errcode{font-family:var(--mono);font-weight:600;font-size:13px;padding:2px 7px;border-radius:6px;
+  background:var(--error-dim);color:var(--error);border:1px solid color-mix(in srgb,var(--error) 30%,transparent)}
+.owner{font-size:12px;color:var(--muted)}
+.mech{font-family:var(--mono);font-size:10.5px;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.mech.auto{background:var(--ok-dim);color:var(--ok)}
+.mech.manual{background:var(--warn-dim);color:var(--warn)}
+.exp-row td{padding:0}
+.exp-in{padding:12px 14px 14px 46px;background:var(--panel-2);border-bottom:1px solid var(--line-soft)}
+.exp-in .row{display:flex;gap:8px;margin-bottom:7px;font-size:13px}
+.exp-in .row .l{color:var(--faint);flex:0 0 92px}
+.exp-in .row .v{color:var(--text)}
+.hidden{display:none !important}
+
+/* playbook tabs */
+.pbtabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.pbtab{padding:8px 13px;border:1px solid var(--line);background:var(--panel);border-radius:9px;font-family:var(--cond);font-weight:600;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.pbtab:hover{border-color:var(--accent-2)}
+.pbtab[aria-pressed="true"]{border-color:var(--accent);background:var(--raise);color:var(--text)}
+.pbtab .mono{font-size:10.5px;color:var(--faint)}
+.pb.hidden{display:none}
+/* comparison table */
+.cmp{width:100%;border-collapse:collapse}
+.cmp th{text-align:left;font-size:11px;color:var(--faint);font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line)}
+.cmp th.coarri{color:var(--accent)} .cmp th.igm{color:var(--accent-2)}
+.cmp td{padding:8px 10px;font-size:13px;border-bottom:1px solid var(--line-soft);vertical-align:top;color:var(--muted)}
+.cmp tr:last-child td{border-bottom:0}
+.cmp td:first-child{color:var(--faint);font-size:12px;width:118px}
+/* message types */
+.mtype{display:flex;gap:8px;flex-wrap:wrap}
+.mtype .mt{border:1px solid var(--line);border-radius:9px;padding:8px 11px;background:var(--panel-2);font-size:12.5px}
+.mtype .mt b{font-family:var(--mono);color:var(--accent-2);font-size:14px;margin-right:7px}
+/* status lifecycle */
+.slife{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 4px}
+.slife .st{border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;background:var(--panel-2);min-width:96px}
+.slife .st .m{display:block;color:var(--faint);font-size:10.5px;margin-top:2px}
+.slife .st b{font-size:12.5px}
+.slife .st.ok{border-color:var(--ok-dim)} .slife .st.ok b{color:var(--ok)}
+.slife .st.err{border-color:var(--error-dim)} .slife .st.err b{color:var(--error)}
+/* callouts */
+.callout{border-left:3px solid var(--warn);background:var(--warn-dim);border-radius:0 8px 8px 0;padding:10px 12px;font-size:13px;margin:12px 0 0;color:var(--text);line-height:1.5}
+.callout code{font-family:var(--mono);font-size:11.5px;color:var(--accent-2);word-break:break-word}
+.callout.info{border-left-color:var(--info);background:color-mix(in srgb,var(--info) 13%,transparent)}
+/* provenance: standard (global/industry) */
+.dot.std{background:var(--accent-2)}
+.prov.std{border-color:color-mix(in srgb,var(--accent-2) 45%,transparent);color:var(--accent-2)}
+/* extra glyphs */
+.g-inf{background:color-mix(in srgb,var(--info) 18%,transparent);color:var(--info)}
+.g-ok{background:var(--ok-dim);color:var(--ok)}
+.classify.four{grid-template-columns:repeat(2,1fr)}
+@media(max-width:560px){.classify.four{grid-template-columns:1fr}}
+/* interactive EDIFACT sample */
+.edifact{font-family:var(--mono);font-size:12px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:6px;overflow-x:auto}
+.edifact .eln{display:flex;gap:10px;align-items:baseline;padding:5px 8px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.edifact .eln:hover{background:var(--raise)}
+.edifact .eln.active{background:var(--accent-dim)}
+.edifact .eln .t{color:var(--accent);font-weight:600;flex:0 0 40px}
+.edifact .eln .r{color:var(--muted)}
+.seg-explain{margin-top:10px;padding:10px 12px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:0 8px 8px 0;font-size:13px;color:var(--text);line-height:1.5}
+.seg-explain b{color:var(--accent)}
+/* message families */
+.fam-group{margin:12px 0 6px;font-family:var(--cond);font-weight:600;font-size:13.5px;color:var(--text)}
+.fam-group:first-child{margin-top:0}
+.fam{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(max-width:560px){.fam{grid-template-columns:1fr}}
+.fam .f{border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--panel-2)}
+.fam .f .code{font-family:var(--mono);font-weight:600;color:var(--accent-2);font-size:13px}
+.fam .f .dir{font-family:var(--mono);font-size:10px;color:var(--faint);float:right;margin-top:2px}
+.fam .f .fd{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+.fam .f .lrp{font-size:10.5px;color:var(--accent);margin-top:6px;font-family:var(--mono)}
+/* glossary */
+.gloss details{border-bottom:1px solid var(--line-soft)}
+.gloss details:last-child{border-bottom:0}
+.gloss summary{cursor:pointer;padding:9px 4px;font-size:13.5px;list-style:none;display:flex;align-items:center;gap:8px}
+.gloss summary::-webkit-details-marker{display:none}
+.gloss summary::before{content:"+";color:var(--accent);font-family:var(--mono);width:12px;flex:0 0 12px}
+.gloss details[open] summary::before{content:"\2013"}
+.gloss summary .abbr{font-family:var(--mono);color:var(--accent-2);font-size:12.5px}
+.gloss summary .nm{color:var(--faint);font-size:12px}
+.gloss .gbody{padding:0 4px 10px 24px;font-size:12.5px;color:var(--muted);line-height:1.5}
+/* small button */
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 13px;font-size:12.5px;color:var(--muted);font-family:var(--sans)}
+.btn:hover{border-color:var(--accent);color:var(--text)}
+/* ticket trainer */
+.trainer-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.score{font-family:var(--mono);font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:6px 12px;background:var(--panel);white-space:nowrap}
+.score b{color:var(--accent);font-size:15px}
+.ticket .thd{padding:12px 14px;display:flex;gap:10px;align-items:flex-start;border-bottom:1px solid var(--line-soft)}
+.ticket .num{font-family:var(--mono);font-size:12px;color:var(--faint);flex:0 0 auto;margin-top:2px}
+.ticket .qt{font-size:13.5px;color:var(--text);line-height:1.45}
+.ticket .dir{font-family:var(--mono);font-size:10px;color:var(--accent-2);margin-top:5px;display:inline-block}
+.ticket .tbd{padding:12px 14px}
+.ticket .ask{font-size:12px;color:var(--faint);margin:0 0 8px}
+.opts{display:flex;flex-direction:column;gap:7px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--panel-2);border-radius:9px;padding:9px 11px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:9px;transition:border-color .15s,background .15s}
+.opt:hover{border-color:var(--accent-2)}
+.opts.locked .opt{cursor:default}
+.opts.locked .opt:hover{border-color:var(--line)}
+.opt .mk{width:18px;height:18px;border-radius:50%;border:1px solid var(--line);flex:0 0 auto;display:grid;place-items:center;font-size:10.5px;font-family:var(--mono);color:var(--faint)}
+.opt.correct{border-color:var(--ok);background:var(--ok-dim)}
+.opt.correct .mk{background:var(--ok);border-color:var(--ok);color:#04120c}
+.opts.locked .opt.correct:hover{border-color:var(--ok)}
+.opt.wrong{border-color:var(--error);background:var(--error-dim)}
+.opt.wrong .mk{background:var(--error);border-color:var(--error);color:#1a0406}
+.reveal{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px;display:none}
+.reveal.show{display:block;animation:fade .25s ease}
+.reveal .rc{font-size:13px;margin:0 0 8px;color:var(--muted)}
+.reveal .rc .l{color:var(--faint);font-family:var(--mono);font-size:10.5px;display:block;margin-bottom:2px}
+.reveal .lesson{margin-top:10px;font-size:12.5px;color:var(--accent);border-left:3px solid var(--accent);padding-left:10px;line-height:1.5}
+/* interface catalogue */
+.fchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.fchip{border:1px solid var(--line);background:var(--panel);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--muted)}
+.fchip:hover{border-color:var(--accent-2)}
+.fchip[aria-pressed="true"]{border-color:var(--accent);background:var(--raise);color:var(--text)}
+.fchip .n{font-family:var(--mono);font-size:10px;color:var(--faint);margin-left:5px}
+.cattable{overflow-x:auto}
+.cat{width:100%;border-collapse:collapse;min-width:640px}
+.cat th{text-align:left;font-size:10.5px;color:var(--faint);font-weight:500;padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+.cat td{padding:7px 9px;font-size:12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+.cat tr:hover td{background:var(--panel-2)}
+.cat .rg{font-family:var(--mono);font-size:10.5px;color:var(--accent-2);white-space:nowrap}
+.cat .ty{font-family:var(--mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
+.dr{font-family:var(--mono);font-size:9.5px;padding:1px 6px;border-radius:5px;white-space:nowrap}
+.dr.out{background:color-mix(in srgb,var(--accent-2) 16%,transparent);color:var(--accent-2)}
+.dr.in{background:var(--ok-dim);color:var(--ok)}
+.dr.bi{background:var(--panel-2);color:var(--faint);border:1px solid var(--line)}
+.dr.unk{background:var(--warn-dim);color:var(--warn)}
+.fam-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.fam-list .fi{font-size:11px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line-soft);border-radius:6px;padding:3px 8px}
+.fam-list .fi b{color:var(--text);font-weight:500}
+.fam-count{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.cmp th.a1{color:var(--info)} .cmp th.a2{color:var(--accent)} .cmp th.reset{color:var(--warn)}
+
+/* provenance chip */
+.prov{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10.5px;
+  padding:2px 7px;border-radius:20px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.prov.doc{border-color:var(--accent-dim);color:var(--accent)}
+.prov.inf{border-color:color-mix(in srgb,var(--warn) 40%,transparent);color:var(--warn)}
+.prov.gap{border-color:color-mix(in srgb,var(--error) 40%,transparent);color:var(--error)}
+
+/* reference layer list */
+.layer{margin-bottom:6px}
+.layer-h{display:flex;align-items:center;gap:9px;padding:9px 6px;cursor:pointer;user-select:none;border-radius:8px}
+.layer-h:hover{background:var(--panel-2)}
+.layer-h .chev{transition:transform .18s;color:var(--faint)}
+.layer-h.open .chev{transform:rotate(90deg)}
+.layer-h .lname{font-family:var(--cond);font-weight:600;font-size:14.5px}
+.layer-h .lcount{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--faint)}
+.layer-body{display:none;padding:2px 0 8px 14px;border-left:1px solid var(--line-soft);margin-left:12px}
+.layer-body.open{display:block}
+.screen{
+  display:flex;align-items:flex-start;gap:10px;padding:9px 10px;border-radius:9px;
+  border:1px solid transparent;cursor:pointer;
+}
+.screen:hover{border-color:var(--line);background:var(--panel-2)}
+.screen .sname{font-size:13.5px;font-weight:500}
+.screen .sname .grp{font-family:var(--mono);font-size:10px;color:var(--faint);display:block;margin-top:1px}
+.screen .right{margin-left:auto;flex:0 0 auto}
+.screen .desc{display:none;font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+.screen.open .desc{display:block}
+.screen .links{margin-top:7px;display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:6px;background:var(--panel-2);border:1px solid var(--line-soft);color:var(--muted)}
+
+/* cross vertical map */
+.cvmap{display:flex;flex-direction:column;gap:8px}
+.cv-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cv-node{font-size:12.5px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2)}
+.cv-node.src{border-color:var(--accent-2);color:var(--accent-2)}
+.cv-arr{color:var(--faint);font-family:var(--mono);font-size:12px}
+.cv-node.edi{border-color:var(--accent);color:var(--accent);font-weight:600}
+
+.footnote{color:var(--faint);font-size:12px;margin-top:8px;line-height:1.5}
+.empty{padding:24px;text-align:center;color:var(--faint);font-size:13.5px}
+
+/* footer */
+.foot{max-width:1440px;margin:8px auto 40px;padding:16px 20px;color:var(--faint);font-size:12px;border-top:1px solid var(--line-soft);display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
+.foot .srcs{display:flex;gap:8px;flex-wrap:wrap}
+.foot .srcs span{font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <span class="mark">LRP <b>EDI</b> Console</span>
+      <span class="sub">liner integration knowledge base · prototype</span>
+    </div>
+    <div class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" type="text" placeholder="Search everything — codes, partners, errors, concepts (e.g. 22G1, Descartes, PA, duplicate, Resend)" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="results">
+      <span class="count" id="qcount"></span>
+      <div class="results" id="results" role="listbox"></div>
+    </div>
+    <button class="toggle-theme" id="themeBtn" title="Toggle light / dark" aria-label="Toggle theme">
+      <svg id="themeIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+  <div class="provbar">
+    <span class="lbl">Show:</span>
+    <div class="seg" id="provSeg" role="group" aria-label="Filter by provenance">
+      <button data-prov="all" aria-pressed="true">All</button>
+      <button data-prov="documented" aria-pressed="false"><span class="dot doc"></span>Documented</button>
+      <button data-prov="inferred" aria-pressed="false"><span class="dot inf"></span>Inferred</button>
+      <button data-prov="standard" aria-pressed="false"><span class="dot std"></span>Standard</button>
+      <button data-prov="gap" aria-pressed="false"><span class="dot gap"></span>Gaps</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <h1>Trace any EDI failure back to the module that owns it.</h1>
+    <p class="lede">EDI doesn't own the shipment data — it exchanges data created in <b>Booking, BL, Schedules, Operations and EMS</b>. So a failed message often has its root cause in another vertical. This console pairs <b>diagnostic playbooks</b> with a <b>screen reference</b>, and marks every fact as documented, inferred, or a known gap.</p>
+    <div class="pipe" id="pipe">
+      <div class="pulse"></div>
+      <div class="stage" data-stage="txn"><div class="k">01</div><div class="n">Business txn</div></div>
+      <div class="stage" data-stage="setup"><div class="k">02</div><div class="n">EDI setup</div></div>
+      <div class="stage" data-stage="map"><div class="k">03</div><div class="n">Mapping</div></div>
+      <div class="stage" data-stage="gen"><div class="k">04</div><div class="n">Generate / Receive</div></div>
+      <div class="stage gate" data-stage="gate"><div class="k">05</div><div class="n">Gate / Validate</div></div>
+      <div class="stage" data-stage="track"><div class="k">06</div><div class="n">Tracker</div></div>
+      <div class="stage" data-stage="module"><div class="k">07</div><div class="n">Business module</div></div>
+    </div>
+  </section>
+
+  <div class="split">
+
+    <!-- ============ DIAGNOSE ============ -->
+    <div>
+      <div class="col-head diag">
+        <span class="tag">Guide</span>
+        <div><h2>Playbooks &amp; foundations</h2><p>New here? Start at Foundations. Chasing a failure? Pick the flow and classify first.</p></div>
+      </div>
+
+      <div class="pbtabs" id="pbtabs">
+        <button class="pbtab" data-pb="foundations" aria-pressed="true">Foundations <span class="mono">start here</span></button>
+        <button class="pbtab" data-pb="coarri" aria-pressed="false">COARRI → EMS <span class="mono">inbound</span></button>
+        <button class="pbtab" data-pb="igm" aria-pressed="false">IGM → Customs <span class="mono">outbound</span></button>
+        <button class="pbtab" data-pb="outbound" aria-pressed="false">Outbound → Tracker <span class="mono">control flow</span></button>
+        <button class="pbtab" data-pb="inbound" aria-pressed="false">Inbound → EMS <span class="mono">architecture</span></button>
+        <button class="pbtab" data-pb="interfaces" aria-pressed="false">Interfaces <span class="mono">live catalogue</span></button>
+        <button class="pbtab" data-pb="mapping" aria-pressed="false">Mapping <span class="mono">architecture</span></button>
+        <button class="pbtab" data-pb="setup" aria-pressed="false">Setup &amp; layers <span class="mono">architecture</span></button>
+        <button class="pbtab" data-pb="compare" aria-pressed="false">Compare</button>
+        <button class="pbtab" data-pb="trainer" aria-pressed="false">Troubleshooter <span class="mono">quiz</span></button>
+      </div>
+
+      <div id="pb-foundations" class="pb">
+
+        <div class="card" data-searchable data-prov="standard" data-keywords="what is edi edifact interchange group message segment element hierarchy foundation basics beginner">
+          <div class="hd"><h3>What EDI is, in one minute</h3><span class="prov std"><span class="dot std"></span>UN/EDIFACT</span></div>
+          <div class="bd">
+            <p style="margin:0 0 12px;color:var(--muted);font-size:13.5px">EDI is how trading partners exchange business documents as structured data instead of paper or email. Liner shipping mostly uses <b style="color:var(--text)">UN/EDIFACT</b> — a UN standard that nests data like envelopes inside envelopes:</p>
+            <div class="pipe">
+              <div class="stage"><div class="k">UNB·UNZ</div><div class="n">Interchange</div></div>
+              <div class="stage"><div class="k">UNG·UNE</div><div class="n">Group (opt)</div></div>
+              <div class="stage gate"><div class="k">UNH·UNT</div><div class="n">Message</div></div>
+              <div class="stage"><div class="k">seg</div><div class="n">Segment</div></div>
+              <div class="stage"><div class="k">elem</div><div class="n">Element</div></div>
+            </div>
+            <p class="footnote">One interchange carries one or more messages; each message is a stack of segments (BGM, DTM, LOC…); each segment holds data elements. A segment is Mandatory or Conditional and can repeat. That's the whole idea.</p>
+            <div class="callout info"><b>Not only EDIFACT.</b> Your platform also speaks <b>ANSI X12</b> with some partners — e.g. GRIFFIN uses X12 <span class="k-code">322</span> (terminal operations). X12 is the North-American EDI standard; same idea (envelopes → segments → elements), different syntax and code sets.</div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="standard" data-keywords="edifact message anatomy sample unb unh bgm tdt loc eqd unt segment interactive example coarri iso 6346 un locode">
+          <div class="hd"><h3>Anatomy of an EDIFACT message</h3><span class="meta">tap any line</span></div>
+          <div class="bd">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13.5px">A (simplified) COARRI arriving from a terminal. Tap each line to see its job — notice how the port and container lines are exactly what your mappings translate.</p>
+            <div class="edifact" id="edifact">
+              <div class="eln" data-seg="unb"><span class="t">UNB</span><span class="r">UNB+UNOA:3+LINE:14+TERMINAL:14+260927:1420+00000001'</span></div>
+              <div class="eln" data-seg="unh"><span class="t">UNH</span><span class="r">UNH+1+COARRI:D:95B:UN'</span></div>
+              <div class="eln" data-seg="bgm"><span class="t">BGM</span><span class="r">BGM+119+SN2587+9'</span></div>
+              <div class="eln" data-seg="tdt"><span class="t">TDT</span><span class="r">TDT+20++1++CARRIER:172::MOL'</span></div>
+              <div class="eln" data-seg="loc"><span class="t">LOC</span><span class="r">LOC+9+INMAA:139'</span></div>
+              <div class="eln" data-seg="eqd"><span class="t">EQD</span><span class="r">EQD+CN+ABCD1234567+22G1:102'</span></div>
+              <div class="eln" data-seg="unt"><span class="t">UNT</span><span class="r">UNT+6+1'</span></div>
+              <div class="eln" data-seg="unz"><span class="t">UNZ</span><span class="r">UNZ+1+00000001'</span></div>
+            </div>
+            <div class="seg-explain" id="segExplain">Tap a segment above to see what it does.</div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="standard" data-keywords="message families liner shipping coprar coarri codeco coparn baplie movins iftmin iftmbc vermas cuscar contrl aperak booking container customs vgm acknowledgment">
+          <div class="hd"><h3>Message families in liner shipping</h3><span class="prov std"><span class="dot std"></span>UN/EDIFACT · SMDG</span></div>
+          <div class="bd">
+            <div class="fam-group">Booking &amp; instruction (IFTM set)</div>
+            <div class="fam">
+              <div class="f"><span class="code">IFTMIN</span><span class="dir">shipper→line</span><div class="fd">Shipping instruction for a consignment (ANSI X12 304).</div><div class="lrp">LRP: Booking / BL</div></div>
+              <div class="f"><span class="code">IFTMBC</span><span class="dir">line→customer</span><div class="fd">Booking confirmation; can carry the VGM cut-off.</div><div class="lrp">LRP: Booking confirm</div></div>
+            </div>
+            <div class="fam-group">Container operations (SMDG)</div>
+            <div class="fam">
+              <div class="f"><span class="code">COPRAR</span><span class="dir">line→terminal</span><div class="fd">Order to load / discharge containers on a vessel.</div><div class="lrp">LRP: EDI5 Load List</div></div>
+              <div class="f"><span class="code">COARRI</span><span class="dir">terminal→line</span><div class="fd">Report confirming containers loaded/discharged (ship-side).</div><div class="lrp">LRP: EMS movements</div></div>
+              <div class="f"><span class="code">CODECO</span><span class="dir">terminal→line</span><div class="fd">Gate-in / gate-out report (land-side moves).</div><div class="lrp">LRP: EMS gate moves</div></div>
+              <div class="f"><span class="code">COPARN</span><span class="dir">line↔terminal</span><div class="fd">Container announcement / release.</div><div class="lrp">LRP: equipment</div></div>
+              <div class="f"><span class="code">BAPLIE</span><span class="dir">vessel/terminal</span><div class="fd">Bayplan — where each box sits on the ship.</div><div class="lrp">LRP: stowage</div></div>
+              <div class="f"><span class="code">MOVINS</span><span class="dir">line→terminal</span><div class="fd">Stowage instruction for the vessel.</div><div class="lrp">LRP: stowage</div></div>
+            </div>
+            <div class="fam-group">VGM, customs &amp; acknowledgments</div>
+            <div class="fam">
+              <div class="f"><span class="code">VERMAS</span><span class="dir">shipper→line</span><div class="fd">Verified Gross Mass (SOLAS VGM) report.</div><div class="lrp">LRP: VGM EDI</div></div>
+              <div class="f"><span class="code">CUSCAR</span><span class="dir">carrier→customs</span><div class="fd">Customs cargo report / manifest (import or export).</div><div class="lrp">LRP: IGM</div></div>
+              <div class="f"><span class="code">CONTRL</span><span class="dir">receiver→sender</span><div class="fd">Syntax acknowledgment — received / accepted / rejected.</div><div class="lrp">LRP: Res. Received</div></div>
+              <div class="f"><span class="code">APERAK</span><span class="dir">receiver→sender</span><div class="fd">Application error &amp; acknowledgment — content-level.</div><div class="lrp">LRP: Error Res.</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="standard" data-keywords="acknowledgment contrl aperak syntax functional application error difference response transmitted accepted">
+          <div class="hd"><h3>Acknowledgments: CONTRL vs APERAK</h3><span class="prov std"><span class="dot std"></span>UN/EDIFACT</span></div>
+          <div class="bd" style="padding:4px 6px 12px">
+            <table class="cmp">
+              <thead><tr><th></th><th class="a2">CONTRL</th><th class="a1">APERAK</th></tr></thead>
+              <tbody>
+                <tr><td>Checks</td><td>Syntax / structure of the interchange</td><td>Application / business content</td></tr>
+                <tr><td>Says</td><td>Received &amp; accepted/rejected</td><td>Read it — and these business errors</td></tr>
+                <tr><td>Analogy</td><td>"Your envelope arrived and parsed"</td><td>"We read it — line 3 is invalid"</td></tr>
+              </tbody>
+            </table>
+            <p class="footnote" style="padding:6px 6px 0">A file can pass CONTRL (well-formed) yet fail APERAK (business-invalid) — the same "transmitted ≠ accepted" split you see on the Dashboard.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="standard" data-keywords="iso 6346 container size type code 22g1 42g1 45g1 un locode port code standard mapping bic reefer">
+          <div class="hd"><h3>The codes behind your mappings</h3><span class="prov std"><span class="dot std"></span>ISO · UN/LOCODE</span></div>
+          <div class="bd">
+            <h4 style="font-size:13.5px;margin:0 0 6px">ISO 6346 — containers</h4>
+            <p style="color:var(--muted);font-size:13px;margin:0 0 10px">The global standard for identifying containers (owner code + serial + check digit) plus a 4-character size/type code. Examples: <span class="k-code">22G1</span> 20ft standard, <span class="k-code">42G1</span> 40ft standard, <span class="k-code">45G1</span> 40ft high-cube. This is what <b style="color:var(--text)">ISO / Equipment mapping</b> translates.</p>
+            <h4 style="font-size:13.5px;margin:0 0 6px">UN/LOCODE — ports &amp; places</h4>
+            <p style="color:var(--muted);font-size:13px;margin:0">The UN code for ports, terminals and logistics locations (e.g. <span class="k-code">INMAA</span> Chennai, <span class="k-code">SGSIN</span> Singapore). Bills of lading and customs filings ride on these — and <b style="color:var(--text)">Port Code Mapping</b> bridges your line port code to the customs authority's expected code.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="standard" data-keywords="global standard to lrp mapping coarri ems coprar edi5 cuscar igm vermas vgm iftm booking translation bridge">
+          <div class="hd"><h3>From global standard → your LRP screens</h3><span class="prov std"><span class="dot std"></span>UN/EDIFACT ↔ LRP</span></div>
+          <div class="bd" style="padding:4px 6px 6px">
+            <table class="tax">
+              <thead><tr><th style="width:130px">Global message</th><th>Where it lives in LRP</th></tr></thead>
+              <tbody>
+                <tr style="cursor:default"><td><span class="k-code">COARRI</span></td><td class="owner">Processed into EMS movements → COARRI → EMS playbook</td></tr>
+                <tr style="cursor:default"><td><span class="k-code">COPRAR</span></td><td class="owner">EDI5 Load List — filtered by BL status (Outbound → Field notes)</td></tr>
+                <tr style="cursor:default"><td><span class="k-code">CUSCAR</span></td><td class="owner">IGM (Import General Manifest) → IGM → Customs playbook</td></tr>
+                <tr style="cursor:default"><td><span class="k-code">VERMAS</span></td><td class="owner">VGM EDI → VGM EDI Report (Reference)</td></tr>
+                <tr style="cursor:default"><td><span class="k-code">IFTMIN/BC</span></td><td class="owner">Booking &amp; BL data that seeds most EDI</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /pb-foundations -->
+
+      <div id="pb-coarri" class="pb hidden">
+      <div class="card" data-searchable data-prov="documented" data-keywords="coarri ems classify mapping business duplicate gate">
+        <div class="hd"><h3>Step 1 · Classify the failure</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+        <div class="bd">
+          <p style="margin:0 0 12px;color:var(--muted);font-size:13.5px">Before changing any mapping, decide which kind of failure it is. Pick one:</p>
+          <div class="classify" id="classify">
+            <button class="branch" data-branch="map">
+              <div class="bt"><span class="glyph g-map">◧</span>Mapping issue</div>
+              <div class="bd2">Movement code not mapped for this Partner/EDI, or the file's segment differs from the mapped one.</div>
+            </button>
+            <button class="branch" data-branch="biz">
+              <div class="bt"><span class="glyph g-biz">!</span>Business dependency</div>
+              <div class="bd2">EDI is fine, but an upstream state (Booking, Work Order, Vessel) isn't satisfied yet.</div>
+            </button>
+            <button class="branch" data-branch="dup">
+              <div class="bt"><span class="glyph g-dup">⧉</span>Duplicate</div>
+              <div class="bd2">Movement already exists. No system error — record just needs review.</div>
+            </button>
+          </div>
+
+          <div class="detail" id="d-map">
+            <h4><span class="prov doc"><span class="dot doc"></span>Documented</span> Fix in EMS EDI Configuration</h4>
+            <p style="color:var(--muted);font-size:13.5px;margin:0 0 10px">COARRI processing depends on the required movement codes being mapped per <b style="color:var(--text)">Partner/EDI</b>. If a code isn't mapped, or the incoming segment differs from the mapped one (e.g. <span class="k-code">SNTS</span>), the file lands in <b style="color:var(--text)">EMS Gate error</b>.</p>
+            <ol class="steps">
+              <li>Get the actual EDI file — partner-specific mapping means you can't diagnose without it.</li>
+              <li>Identify the <b>BGM</b> and the <b>actual segment</b> present in the file.</li>
+              <li>Compare against <b>EMS EDI Configuration</b> for that Partner/EDI.</li>
+              <li>Add the missing movement-code / segment mapping.</li>
+              <li>Reprocess. A mapping request should always carry the file + exact BGM/segment.</li>
+            </ol>
+          </div>
+
+          <div class="detail" id="d-biz">
+            <h4><span class="prov doc"><span class="dot doc"></span>Documented</span> Fix the owning module, then let the back job run</h4>
+            <p style="color:var(--muted);font-size:13.5px;margin:0 0 10px">The record sits as <b style="color:var(--text)">Not Approved</b> in EMS Gate. When the upstream condition is corrected and the <b style="color:var(--text)">back job</b> runs, <b style="color:var(--text)">EMS Auto Reprocess</b> re-validates and approves it — you usually don't touch the EDI at all. Which module? See the error-code table below (BC, PA, IW, ITT).</p>
+            <ol class="steps">
+              <li>Read the EMS Gate error code to find the <b>owning module</b>.</li>
+              <li>Correct the state there (backdate Booking, approve Work Order, supply Vessel/Voyage…).</li>
+              <li>Wait for the back job — Auto Reprocess approves the Gate record automatically.</li>
+            </ol>
+          </div>
+
+          <div class="detail" id="d-dup">
+            <h4><span class="prov doc"><span class="dot doc"></span>Documented</span> Action Not Required — review, don't panic</h4>
+            <p style="color:var(--muted);font-size:13.5px;margin:0 0 10px">A duplicate is <b style="color:var(--text)">not</b> a system error. The record stays <b style="color:var(--text)">visible</b> in EMS Gate for reference and is cleared <b style="color:var(--text)">manually</b> — it does not vanish on its own.</p>
+            <div class="row" style="display:flex;gap:8px;font-size:13px;margin-bottom:6px"><span style="color:var(--faint);flex:0 0 120px">Exact duplicate</span><span>Container No + Movement Code + <b>exact</b> Activity Date/Time all match.</span></div>
+            <div class="row" style="display:flex;gap:8px;font-size:13px"><span style="color:var(--faint);flex:0 0 120px">Logical duplicate</span><span>Container No + Movement Code + Terminal/Depot + Booking No match, and Activity Date/Time within <b>±5 days</b>.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" data-searchable data-prov="documented" data-keywords="error code taxonomy bc pa iw bm ym vm om ia itt booking work order vessel voyage bound gate">
+        <div class="hd"><h3>Step 2 · EMS Gate error codes</h3><span class="meta">tap a row to expand</span></div>
+        <div class="bd" style="padding:4px 6px 6px">
+          <table class="tax">
+            <thead><tr><th style="width:60px">Code</th><th>Meaning</th><th style="width:120px">Owning module</th><th style="width:78px">Repair</th></tr></thead>
+            <tbody id="taxBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" data-searchable data-prov="documented" data-keywords="correction reprocess error movements manual auto back job completed">
+        <div class="hd"><h3>Step 3 · How the fix gets applied</h3></div>
+        <div class="bd">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" class="repairgrid">
+            <div class="branch" style="cursor:default">
+              <div class="bt"><span class="mech manual">MANUAL</span> EMS EDI Error Movements</div>
+              <ol class="steps" style="margin-top:8px">
+                <li>Set <b>From / To Date</b> for the error period.</li>
+                <li>Add the <b>EDI File Name</b> (search → Select).</li>
+                <li><b>Show</b> — errors populate; code key sits below.</li>
+                <li>Double-click a record, correct fields, <b>Add</b>.</li>
+                <li><b>Re Process</b> → status becomes <b>Completed</b> in EMS Gate.</li>
+              </ol>
+              <p class="footnote">Shortcut: double-click the error in EMS Gate to jump straight here.</p>
+            </div>
+            <div class="branch" style="cursor:default">
+              <div class="bt"><span class="mech auto">AUTO</span> EMS Auto Reprocess</div>
+              <p class="bd2" style="margin-top:8px">For state-dependency errors (BC, PA, IW), you fix the <b style="color:var(--text)">owning module</b> — not the EDI. The Gate record stays <b style="color:var(--text)">Not Approved</b> until the condition clears and the <b style="color:var(--text)">back job</b> runs, which validates and approves it for you.</p>
+            </div>
+          </div>
+          <p class="footnote">Rule of thumb — <b style="color:var(--text)">delivery failed but file was correct → Resend</b>; <b style="color:var(--text)">business/master data was wrong → fix source → Re-initiate / Auto Reprocess</b>.</p>
+        </div>
+      </div>
+      </div><!-- /pb-coarri -->
+
+      <div id="pb-igm" class="pb hidden">
+        <div class="card" data-searchable data-prov="documented" data-keywords="igm import general manifest prerequisite schedules bl import documentation save mappings filing master 24 hours mcn">
+          <div class="hd"><h3>The chain that must exist first</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <p style="margin:0 0 12px;color:var(--muted);font-size:13.5px">IGM = <b style="color:var(--text)">Import General Manifest</b>, filed at the import terminal ≥ 24h before vessel arrival. Every link below must exist before generation — the terminal's required format is set up once as IGM masters/mappings.</p>
+            <div class="pipe" style="margin-top:4px">
+              <div class="stage"><div class="k">SCHED</div><div class="n">Vessel · Voyage · Bound</div></div>
+              <div class="stage"><div class="k">DOC</div><div class="n">Bill of Lading</div></div>
+              <div class="stage gate"><div class="k">SAVE</div><div class="n">Import Documentation</div></div>
+              <div class="stage"><div class="k">MAP</div><div class="n">Port · Package · Equip</div></div>
+              <div class="stage"><div class="k">GEN</div><div class="n">IGM Generation</div></div>
+            </div>
+            <p class="footnote"><b style="color:var(--text)">Filing Master</b> supplies Sender, Receiver ID, Basic Msg & Filling Msg — all required before <span class="k-code">Show</span>. Where an approved <b style="color:var(--text)">MCN</b> (Manifest Correction Note) exists, commodity details come from the MCN, not the original Import Documentation.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="igm classify bl missing mapping port customs mcn commodity troubleshoot generate">
+          <div class="hd"><h3>Step 1 · Classify the failure</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <p style="margin:0 0 12px;color:var(--muted);font-size:13.5px">The three IGM failures look alike but branch completely differently:</p>
+            <div class="classify">
+              <button class="branch" data-branch="igmA">
+                <div class="bt"><span class="glyph g-biz">∅</span>BL not in IGM</div>
+                <div class="bd2">The BL exists but never appears in IGM EDI Generation.</div>
+              </button>
+              <button class="branch" data-branch="igmB">
+                <div class="bt"><span class="glyph g-map">◧</span>Present, won't generate</div>
+                <div class="bd2">BL loads, but generation is blocked with a mapping message.</div>
+              </button>
+              <button class="branch" data-branch="igmC">
+                <div class="bt"><span class="glyph g-dup">⇄</span>Commodity looks wrong</div>
+                <div class="bd2">Generated commodity differs from the original shipment info.</div>
+              </button>
+            </div>
+
+            <div class="detail" id="d-igmA">
+              <h4><span class="prov doc"><span class="dot doc"></span>Documented</span> Import Documentation isn't saved</h4>
+              <p style="color:var(--muted);font-size:13.5px;margin:0 0 10px">A BL only loads into IGM EDI Generation once its <b style="color:var(--text)">Import Documentation is saved</b>. This is a different branch from "present but blocked" — don't jump to mappings yet.</p>
+              <ol class="steps">
+                <li>Confirm the BL exists and belongs to the selected Voyage/Port.</li>
+                <li>Open <b>Import Documentation</b> for that BL/shipment.</li>
+                <li>Complete and <b>Save</b> it.</li>
+                <li>Return to IGM EDI Generation → <span class="k-code">Show</span>; the BL now loads.</li>
+              </ol>
+            </div>
+            <div class="detail" id="d-igmB">
+              <h4><span class="prov doc"><span class="dot doc"></span>Documented</span> Required mapping is missing</h4>
+              <p style="color:var(--muted);font-size:13.5px;margin:0 0 10px">Message: <span class="k-code">Mapping yet to be created. Hence IGM cannot be generated for below BLs.</span> Usually the mandatory <b style="color:var(--text)">Line Port Code ↔ Customs Port Code</b> mapping. The BL can be perfectly valid — this is the translation layer, not the business data.</p>
+              <ol class="steps">
+                <li>Note the port(s) on the blocked BL(s).</li>
+                <li>Verify <b>IGM Port Mapping</b> exists for Line ↔ Customs Port Code.</li>
+                <li>Also check Package & Equipment mappings if flagged.</li>
+                <li>Create the missing mapping, then <b>Generate</b>.</li>
+              </ol>
+            </div>
+            <div class="detail" id="d-igmC">
+              <h4><span class="prov doc"><span class="dot doc"></span>Documented</span> An approved MCN is in play</h4>
+              <p style="color:var(--muted);font-size:13.5px;margin:0 0 10px">IGM references Import Documentation, but when an <b style="color:var(--text)">approved MCN</b> exists it pulls the <b style="color:var(--text)">latest commodity details from the MCN</b>. The output may be correct even though it differs from the original.</p>
+              <ol class="steps">
+                <li>Check whether an approved MCN exists for the BL.</li>
+                <li>Compare its latest commodity details against the IGM output.</li>
+                <li>Only treat the IGM as wrong if it disagrees with the approved MCN.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="igm validation messages line no default generate show rows mapping sender receiver basic filling grid">
+          <div class="hd"><h3>Step 2 · IGM validation messages</h3><span class="prov doc"><span class="dot doc"></span>contracts_knowledge_base</span></div>
+          <div class="bd" style="padding:4px 6px 6px">
+            <table class="tax">
+              <thead><tr><th style="width:44%">Condition</th><th>What LRP tells you</th></tr></thead>
+              <tbody>
+                <tr style="cursor:default"><td>Header fields missing</td><td class="owner">Prompts to select Vessel, Voyage, Bound, Port, Terminal, Message Type, Sender/Receiver ID, Basic or Filling Msg</td></tr>
+                <tr style="cursor:default"><td>Print, no row selected</td><td class="owner">"No rows selected"</td></tr>
+                <tr style="cursor:default"><td>Line range without a BL</td><td class="owner">"No Rows Selected"</td></tr>
+                <tr style="cursor:default"><td>Remove on empty From/To</td><td class="owner">"Empty Rows in the grid"</td></tr>
+                <tr style="cursor:default"><td>BL mapping missing</td><td class="owner">"Below Mapping yet to be created, Hence IGM cannot be generated for below Bls."</td></tr>
+                <tr style="cursor:default"><td>Line no. exceeds grid</td><td class="owner">"Total Line no. more by Grid Record count"</td></tr>
+                <tr style="cursor:default"><td>No Line No entered</td><td class="owner">"Line No is not mentioned. Do you want Generated Default Line-no?" — OK = auto, No = manual</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="igm message type prior manifest final fresh amendment deletion supplementary generate save line number file no txt excel pdf">
+          <div class="hd"><h3>Reference · message types & generation</h3></div>
+          <div class="bd">
+            <div class="mtype" style="margin-bottom:14px">
+              <div class="mt"><b>V</b>Prior Manifest</div>
+              <div class="mt"><b>F</b>Final / Fresh</div>
+              <div class="mt"><b>A</b>Amendment</div>
+              <div class="mt"><b>D</b>Deletion</div>
+              <div class="mt"><b>S</b>Supplementary</div>
+            </div>
+            <p class="bd2" style="margin:0 0 10px">Amendment (A) resends updated BL details from the Prior Manifest; Deletion (D) removes a BL from a previously submitted manifest — IGM is a repeatable filing, not a one-shot.</p>
+            <ol class="steps">
+              <li><b>New</b> → select Service, Vessel, Voyage (Bound auto-fills).</li>
+              <li>Select Port, then Terminal.</li>
+              <li>Choose Message Type, then Sender & Receiver ID.</li>
+              <li>Select Basic Msg & Filling Msg, then <b>Show</b> — BLs + cargo load.</li>
+              <li>Map Line Numbers (or accept default), <b>Save</b>, then <b>Generate</b>.</li>
+              <li>An <b>IGM File No</b> appears; send/upload to the terminal (txt, Excel or PDF).</li>
+            </ol>
+          </div>
+        </div>
+      </div><!-- /pb-igm -->
+
+      <div id="pb-outbound" class="pb hidden">
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="outbound edi dashboard generate reference number tracker agency service voyage show status sent accepted error response cancelled lifecycle">
+          <div class="hd"><h3>The outbound lifecycle</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13.5px"><b style="color:var(--text)">EDI Dashboard</b> decides <i>which</i> business transactions become an EDI; <b style="color:var(--text)">EDI Tracker</b> tells you what happened after. The handoff between them is the <b style="color:var(--text)">EDI Reference Number</b>.</p>
+            <div class="pipe" style="margin-top:2px">
+              <div class="stage"><div class="k">DATA</div><div class="n">Booking · BL · Voyage</div></div>
+              <div class="stage"><div class="k">DASH</div><div class="n">Agency→Service→Show</div></div>
+              <div class="stage gate"><div class="k">GEN</div><div class="n">Generate EDI</div></div>
+              <div class="stage"><div class="k">REF</div><div class="n">Reference No.</div></div>
+              <div class="stage"><div class="k">TRACK</div><div class="n">EDI Tracker</div></div>
+              <div class="stage"><div class="k">OUT</div><div class="n">Partner / Customs</div></div>
+            </div>
+            <p style="margin:12px 0 2px;color:var(--muted);font-size:13px">Dashboard status lifecycle:</p>
+            <div class="slife">
+              <div class="st"><b>Sent</b><span class="m">transmitted to recipient</span></div>
+              <div class="st"><b>Res. Received</b><span class="m">response came back</span></div>
+              <div class="st ok"><b>Accepted</b><span class="m">recipient processed it</span></div>
+              <div class="st err"><b>Error Res.</b><span class="m">response has errors</span></div>
+              <div class="st"><b>Cancelled</b><span class="m">won't proceed</span></div>
+            </div>
+            <div class="callout"><b>Sent ≠ Accepted.</b> A file can leave LRP successfully and still be rejected by the recipient. Transmission failure and recipient-validation failure are different problems — resending an accepted-but-wrong file fixes nothing.</div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="classify resend reinitiate reset action failed request retransmit new request id ftp sftp email dashboard log amendment">
+          <div class="hd"><h3>Step 1 · Which action do you need?</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <p style="margin:0 0 12px;color:var(--muted);font-size:13.5px">Three buttons, three different jobs. <b style="color:var(--text)">Not in the Dashboard at all?</b> — that's upstream (Booking / BL / Voyage / mapping), not a Tracker action.</p>
+            <div class="classify">
+              <button class="branch" data-branch="resend">
+                <div class="bt"><span class="glyph g-dup">↻</span>Resend</div>
+                <div class="bd2">Partner didn't receive a correctly-generated file.</div>
+              </button>
+              <button class="branch" data-branch="reinit">
+                <div class="bt"><span class="glyph g-biz">⟳</span>Re-initiate</div>
+                <div class="bd2">Request failed; you've fixed the root cause.</div>
+              </button>
+              <button class="branch" data-branch="reset">
+                <div class="bt"><span class="glyph g-map">⌫</span>Reset EDI</div>
+                <div class="bd2">Regenerate for the voyage as new, not an amendment.</div>
+              </button>
+            </div>
+
+            <div class="detail" id="d-resend">
+              <h4><span class="prov doc"><span class="dot doc"></span>Documented</span> Resend — send the same file again</h4>
+              <p style="color:var(--muted);font-size:13.5px;margin:0 0 10px">Retransmits the <b style="color:var(--text)">existing</b> outbound EDI via the configured <span class="k-code">FTP</span> / <span class="k-code">SFTP</span> / <span class="k-code">Email</span>. <b style="color:var(--text)">Outbound only.</b> You're not rebuilding anything.</p>
+              <ol class="steps">
+                <li>Open EDI → Transactions → EDI Tracker.</li>
+                <li>Find the outbound record (filter by Ref ID / Partner / EDI ID).</li>
+                <li>Select it and click <b>Resend</b> — it goes out via the configured method.</li>
+              </ol>
+            </div>
+            <div class="detail" id="d-reinit">
+              <h4><span class="prov doc"><span class="dot doc"></span>Documented</span> Re-initiate — process it again</h4>
+              <p style="color:var(--muted);font-size:13.5px;margin:0 0 10px">For the <b style="color:var(--text)">Failed Request</b> queue. Fix the cause <i>first</i>; then LRP re-captures the data, builds a fresh request, and mints a <b style="color:var(--text)">new Request ID</b>. Success → status <b style="color:var(--text)">Completed</b>.</p>
+              <ol class="steps">
+                <li>Correct the underlying data / setup problem.</li>
+                <li>Find the failed request in EDI Tracker; select it.</li>
+                <li>Click <b>Re-initiate</b> → new Request ID → processes again → Completed.</li>
+              </ol>
+            </div>
+            <div class="detail" id="d-reset">
+              <h4><span class="prov doc"><span class="dot doc"></span>contracts_knowledge_base</span> Reset EDI — clear the log, start fresh</h4>
+              <p style="color:var(--muted);font-size:13.5px;margin:0 0 10px">A <b style="color:var(--text)">Dashboard</b> action, not a Tracker one. Clears the existing EDI log so the next generation is treated as <b style="color:var(--text)">New</b> (new flag) rather than an amendment — under Message Function <span class="k-code">New</span> or <span class="k-code">New and Update</span>.</p>
+              <ol class="steps">
+                <li>In EDI Dashboard, choose the voyage and applicable Message Function.</li>
+                <li>Reset the EDI log for that voyage.</li>
+                <li>Generate again — created fresh, not as an amendment.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="resend reinitiate reset comparison difference send again process again generate again screen">
+          <div class="hd"><h3>Step 2 · Resend vs Re-initiate vs Reset</h3><span class="meta">the three-button trap</span></div>
+          <div class="bd" style="padding:4px 6px 6px">
+            <table class="cmp">
+              <thead><tr><th></th><th class="a1">Resend</th><th class="a2">Re-initiate</th><th class="reset">Reset EDI</th></tr></thead>
+              <tbody>
+                <tr><td>In a word</td><td>Send again</td><td>Process again</td><td>Generate again</td></tr>
+                <tr><td>Screen</td><td>Tracker</td><td>Tracker</td><td>Dashboard</td></tr>
+                <tr><td>The file</td><td>Existing, resent</td><td>Data re-captured</td><td>Log cleared, new</td></tr>
+                <tr><td>New Request ID</td><td>—</td><td>Yes</td><td>New generation</td></tr>
+                <tr><td>Fix cause first?</td><td>No — delivery only</td><td>Yes</td><td>N/A</td></tr>
+                <tr><td>Trigger</td><td>Partner didn't receive</td><td>Failed request</td><td>Need new, not amend</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="tracker view file view error download compressed error details structural value parser varchar float batchupdateexception position length format">
+          <div class="hd"><h3>Step 3 · Reading the Tracker (and its trap)</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+              <span class="chip">View File → EDI File Details</span>
+              <span class="chip">View Error → Error Details</span>
+              <span class="chip">Download → text file</span>
+              <span class="chip">Compressed Download</span>
+            </div>
+            <p style="color:var(--muted);font-size:13.5px;margin:0"><b style="color:var(--text)">View File</b> shows what was <i>actually transmitted</i> — compare it against the current BL to tell whether the problem happened before or after generation.</p>
+            <div class="callout"><b>The View Error trap.</b> Value errors show specific detail. But <b>structural</b> errors (wrong position / format / length) can defeat the parser, which then shows a generic message like <code>java.sql.BatchUpdateException: Error converting data type varchar to float</code>. A generic error doesn't mean the field is unknowable — it often means the <i>file structure</i> is malformed. Don't chase the named column; check the layout.</div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="coprar edi5 load list bl status draft confirmed issued operations count role based visibility ems access audit trail sftp date resend date completed date downloaded">
+          <div class="hd"><h3>Field notes</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <h4 style="font-size:13.5px;margin:0 0 6px;display:flex;gap:8px;align-items:center">COPRAR / EDI5 (Load List) filters by BL status</h4>
+            <p style="color:var(--muted);font-size:13px;margin:0 0 14px">Confirmed/Issued BL → <b style="color:var(--ok)">included</b>. Draft BL → <b style="color:var(--error)">excluded</b>. No BL → <b style="color:var(--error)">excluded</b>. Operations List View shows containers regardless of BL status, so <b style="color:var(--text)">Operations and Customs counts legitimately differ</b>. "Visible in Operations, missing from COPRAR" → the BL is Draft or missing. Fix it in <b style="color:var(--text)">Documentation</b>, not EDI.</p>
+            <h4 style="font-size:13.5px;margin:0 0 6px">Tracker is also an audit trail</h4>
+            <p style="color:var(--muted);font-size:13px;margin:0 0 14px">Timestamp columns answer "was it really sent?" — <span class="k-code">SFTP Date</span>, <span class="k-code">FTP Date</span>, <span class="k-code">Email Date</span>, <span class="k-code">Resend Date</span>, <span class="k-code">Completed Date</span>, <span class="k-code">Downloaded User/Date</span>, <span class="k-code">Regenerated Date</span>, and more.</p>
+            <h4 style="font-size:13.5px;margin:0 0 6px">Records can be hidden by role</h4>
+            <p style="color:var(--muted);font-size:13px;margin:0">EDI visibility is role-based — e.g. EMS EDI can be restricted to EMS users. "User A sees it, User B doesn't" is usually <b style="color:var(--text)">access rights</b>, not a missing record.</p>
+          </div>
+        </div>
+
+      </div><!-- /pb-outbound -->
+
+      <div id="pb-inbound" class="pb hidden">
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="inbound edi architecture received partner terminal depot interpret validate ems gate movement entry approved not approved principle beginning">
+          <div class="hd"><h3>Inbound architecture — receiving is only the beginning</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <p style="margin:0 0 12px;color:var(--muted);font-size:13.5px">An external system sends data <i>into</i> LRP. A file arriving is not the same event as EMS being updated — it must first be understood, mapped and validated.</p>
+            <div class="pipe">
+              <div class="stage"><div class="k">EXT</div><div class="n">Partner·Terminal·Depot</div></div>
+              <div class="stage"><div class="k">RECV</div><div class="n">EDI received</div></div>
+              <div class="stage"><div class="k">ID</div><div class="n">Partner + EDI</div></div>
+              <div class="stage"><div class="k">MAP</div><div class="n">Interpret BGM/seg</div></div>
+              <div class="stage gate"><div class="k">GATE</div><div class="n">EMS Gate</div></div>
+              <div class="stage"><div class="k">EMS</div><div class="n">Movement Entry</div></div>
+            </div>
+            <div class="callout info"><b>Receiving the EDI is only the beginning.</b> To become a valid movement it must establish the right Partner/EDI mapping, pass duplicate checks, satisfy Booking / Work Order / previous-movement / sequence dependencies, then complete EMS processing. Failure can occur at any layer.</div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="five inbound states mapping action required not required not approved completed classify status diagnosis">
+          <div class="hd"><h3>The five inbound states</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd" style="padding:4px 6px 6px">
+            <table class="tax">
+              <thead><tr><th style="width:132px">State</th><th>What it means / what to do</th></tr></thead>
+              <tbody>
+                <tr style="cursor:default"><td><span class="errcode">Mapping issue</span></td><td class="owner">Partner / message / segment can't resolve. Fix in EMS EDI Configuration, reprocess.</td></tr>
+                <tr style="cursor:default"><td><span class="mech manual">Action Req.</span></td><td class="owner">Reached EMS validation but a correction is needed (BC, PA, IW, QM…).</td></tr>
+                <tr style="cursor:default"><td><span class="mech auto">Not Required</span></td><td class="owner">No correction needed — documented example is a duplicate. Stays visible; clear manually.</td></tr>
+                <tr style="cursor:default"><td><span class="mech manual">Not Approved</span></td><td class="owner">A business condition isn't satisfied yet. Fix the owning module; back job approves.</td></tr>
+                <tr style="cursor:default"><td><span class="mech auto">Completed</span></td><td class="owner">Processing succeeded; Movement Entry updated. Cannot be rolled back.</td></tr>
+              </tbody>
+            </table>
+            <p class="footnote" style="padding:6px 6px 0">"Inbound EDI is not working" is never the final diagnosis — decide which of these five states you're in. Error codes & correction steps live in the <b style="color:var(--text)">COARRI → EMS</b> tab.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="edi tracker versus ems gate two layers integration file request business validation accept movement">
+          <div class="hd"><h3>EDI Tracker vs EMS Gate — two layers</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <table class="cmp">
+              <thead><tr><th></th><th class="a2">EDI Tracker</th><th class="a1">EMS Gate</th></tr></thead>
+              <tbody>
+                <tr><td>Answers</td><td>"Did the file / request process?"</td><td>"Can EMS accept this movement?"</td></tr>
+                <tr><td>Layer</td><td>Integration / file</td><td>Business validation</td></tr>
+                <tr><td>Go here when</td><td>Inbound file problem</td><td>File interpreted but movement rejected</td></tr>
+              </tbody>
+            </table>
+            <p class="footnote" style="padding:6px 2px 0">A functional distinction, not a claim about internal database sequencing — the source documents the EMS Gate side strongly but not every technical handoff between the two.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="rcvs booking number fallback 15 digit snts mandatory completed rollback cleared deleted operation reset load confirmation special rules">
+          <div class="hd"><h3>Special inbound rules</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <h4 style="font-size:13.5px;margin:0 0 6px">RCVS Booking Number fallback (all locations)</h4>
+            <ol class="steps" style="margin-bottom:14px">
+              <li>Valid <b>15-digit</b> Booking No in the EDI? → use it.</li>
+              <li>Blank / invalid? → derive from the preceding <b>SNTS</b> move for that container.</li>
+              <li>SNTS also invalid? → reject with <span class="k-code">Booking number is mandatory.</span></li>
+            </ol>
+            <h4 style="font-size:13.5px;margin:0 0 6px">Rollback limits</h4>
+            <p style="color:var(--muted);font-size:13px;margin:0 0 8px"><b style="color:var(--text)">Completed records can't be rolled back</b> — they're already in Movement Entry and won't return to Error. Don't treat a Completed record like a failed one.</p>
+            <p style="color:var(--muted);font-size:13px;margin:0"><b style="color:var(--text)">Cleared / deleted records</b> have no rollback either. For Operation Reset cases, redo <b style="color:var(--text)">Load Confirmation</b> in the Operations module.</p>
+          </div>
+        </div>
+
+      </div><!-- /pb-inbound -->
+
+      <div id="pb-interfaces" class="pb hidden">
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="interfaces catalogue phoenix lrp swire seacos partner endpoint region message direction live">
+          <div class="hd"><h3>Your live EDI interfaces</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd">
+            <p style="margin:0 0 8px;color:var(--muted);font-size:13.5px"><b style="color:var(--text)">Phoenix is LRP's internal name</b>, so wherever you see "Phoenix → SAP" it means LRP posting into SAP. This tab holds the real interface list — every EDI type paired with its partner/endpoint — grouped into six families. The six cards below are the curated playbooks; the full searchable catalogue is at the bottom.</p>
+            <p class="footnote" style="padding:0">Direction here is transmission direction — everything in IDB Configuration is LRP generating &amp; sending (outbound). The cargo operation (Export/Import) is the OprType, captured in the IDB engine below. TOS: Swire Shipping SEACOS.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="idb configuration engine data query validation search prerequisite oprtype message function request type response agency by voyage mcn validation generation 64">
+          <div class="hd"><h3>IDB Configuration — the generation engine</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13.5px"><b style="color:var(--text)">IDB Configuration</b> is the master that drives every outbound EDI — <b style="color:var(--text)">64 configs</b>, one per Partner + EDI. Each row tells LRP how to build that file: the operation, the message functions allowed, and the queries that extract the data.</p>
+            <div class="fam">
+              <div class="f"><span class="code">Response Agency</span><div class="fd">Discharge (23) · Load (20) · Line (10) — which side of the call the EDI serves.</div></div>
+              <div class="f"><span class="code">OprType</span><div class="fd">Import (20) · Export+Import (16) · Export (15) — the cargo operation.</div></div>
+              <div class="f"><span class="code">Request Type</span><div class="fd">Single (45) · Multiple (19) — one record vs a batch per file.</div></div>
+              <div class="f"><span class="code">Message Function</span><div class="fd">New / Update / Amendment / Cancel / Original / Add — maps to IGM's V·F·A·D·S and the Dashboard's Reset logic.</div></div>
+            </div>
+            <p style="margin:12px 0 6px;color:var(--muted);font-size:13px">The query-driven heart — every config carries these:</p>
+            <div class="fam">
+              <div class="f"><span class="code">Data Query Id</span><div class="fd">Extracts the business data for the file (all 64 configs).</div></div>
+              <div class="f"><span class="code">Validation Query Id</span><div class="fd">Pre-checks before generation (49 configs).</div></div>
+              <div class="f"><span class="code">Search Query Id</span><div class="fd">Populates the Dashboard selection grid (63 configs).</div></div>
+              <div class="f"><span class="code">Prerequisite &amp; flags</span><div class="fd">By Voyage = Y on 61 · MCN Validation = Y on 42 · free-text prerequisites · up to 15 Reference fields.</div></div>
+            </div>
+            <div class="callout info"><b>This resolves the earlier direction question.</b> Everything in IDB Configuration is LRP <i>generating and sending</i> — so the China "Imports IFCSUM" and COPARN rows are outbound; their Import/Export nature is the OprType (cargo operation), not the transmission direction.</div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="partner directory 350 depot agency customs port portal inttra type breakdown">
+          <div class="hd"><h3>Partner directory</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13.5px"><b style="color:var(--text)">350 partners</b> in EDI Partner Details — mostly the depot/terminal network behind EMS movements:</p>
+            <div class="fam">
+              <div class="f"><span class="code">Depot · 249</span><div class="fd">Container depots / terminals — the EMS · COARRI · CODECO side.</div></div>
+              <div class="f"><span class="code">Partner · 64</span><div class="fd">EDI trading partners — matches the 64 IDB generation configs.</div></div>
+              <div class="f"><span class="code">Agency · 23</span><div class="fd">Agencies, including customs administrations.</div></div>
+              <div class="f"><span class="code">Customs · 8</span><div class="fd">Customs authorities (e.g. NZ Customs).</div></div>
+              <div class="f"><span class="code">Port · 5</span><div class="fd">Port authorities (e.g. Port of Brisbane).</div></div>
+              <div class="f"><span class="code">Portal · 1</span><div class="fd">INTTRA — the neutral booking/SI e-commerce portal.</div></div>
+            </div>
+            <p class="footnote">The 64 'Partner'-type records line up with the 64 IDB configs — your outbound EDI set. Depots dominate because every equipment movement point is a partner.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="ifcsum consolidated manifest australia port authority china asia benline cosco sinotrans darwin nsw brisbane melbourne">
+          <div class="hd"><h3>IFCSUM — consolidated manifest</h3><span class="prov std"><span class="dot std"></span>UN/EDIFACT · your config</span></div>
+          <div class="bd">
+            <p style="margin:0;color:var(--muted);font-size:13px">The consolidated cargo manifest (many consignments in one message) — your busiest family. Australian port authorities (Darwin, NSW, Brisbane, Townsville, Melbourne) and Asian agents (Benline, China Marine / COSCO, Guangzhou Unitrans). Outbound: LRP builds it from BL/cargo and sends it to the port/agent.</p>
+            <div class="fam-list" data-fammembers="ifcsum"></div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="coparn d00b container announcement release china booking agents ningbo xiamen shenzhen png mitl spictl">
+          <div class="hd"><h3>COPARN — container announcement (D00B)</h3><span class="prov std"><span class="dot std"></span>UN/EDIFACT · your config</span></div>
+          <div class="bd">
+            <p style="margin:0;color:var(--muted);font-size:13px">Container announcement / release, pinned to the <span class="k-code">D00B</span> directory. Exchanged with China booking agents (Ningbo, Xiamen, Shenzhen) and PNG terminals (MITL, SPICTL). Two-way: announcements out, agent responses in.</p>
+            <div class="fam-list" data-fammembers="coparn"></div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="national customs manifests nz icr ocr cre pacific fiji tonga png solomon timor samoa australia atlantis 1-stop us ams eu ens descartes psa cuscar iftmcs boeckmans">
+          <div class="hd"><h3>National customs manifests</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd">
+            <p style="margin:0;color:var(--muted);font-size:13px">Per-country customs filings — NZ (ICR / OCR / CRE), the Pacific (FJ, NC, PG, SB, TL, TO, WS, AS), Australia (Atlantis ICS, 1-Stop), Belgium/Netherlands (Boeckmans IFTMCS), plus advance manifests to the US (AMS) and EU (ENS) via the Descartes gateway, and PSA's CUSCAR. Outbound to customs — transmitted through a <b style="color:var(--text)">mix of gateways and direct</b> connections. This is your IGM playbook, generalised across authorities.</p>
+            <div class="fam-list" data-fammembers="customs"></div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="sap finance phoenix agency commission accrual revenue voyage mcn invoice xml bsm accounting">
+          <div class="hd"><h3>SAP / finance (Phoenix → SAP)</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd">
+            <p style="margin:0;color:var(--muted);font-size:13px">Since Phoenix = LRP, this is LRP posting financials into SAP: Agency Commission Accrual, SAP Revenue Voyage (and its MCN variant), plus Invoice XML (BSM Global) and the AS Finance Report. Confirms EDI reaches <b style="color:var(--text)">Accounting</b>, not just operations — and gives your SAP EDI Report real content.</p>
+            <div class="fam-list" data-fammembers="sap"></div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="vermas outbound vgm verified gross mass china sinotrans ningbo yongtong southeast ep">
+          <div class="hd"><h3>VERMAS outbound (VGM)</h3><span class="prov std"><span class="dot std"></span>UN/EDIFACT · your config</span></div>
+          <div class="bd">
+            <p style="margin:0;color:var(--muted);font-size:13px">SOLAS Verified Gross Mass pushed outbound to China weighing / agent systems (Sinotrans East China &amp; Shanghai, Ningbo Yongtong / Southeast, EP-VERMAS). LRP's VGM data → partner. Pairs with the VGM EDI Report on the reference side.</p>
+            <div class="fam-list" data-fammembers="vermas"></div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="dg dangerous goods manifest iftdgn australia nsw brisbane melbourne import export">
+          <div class="hd"><h3>DG manifest (IFTDGN)</h3><span class="prov std"><span class="dot std"></span>UN/EDIFACT · your config</span></div>
+          <div class="bd">
+            <p style="margin:0;color:var(--muted);font-size:13px">The dangerous-goods manifest (import and export) to Australian port authorities (NSW, Brisbane, Melbourne). Built from the DG cargo details on the BL — a specialised sibling of the cargo manifest.</p>
+            <div class="fam-list" data-fammembers="dg"></div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="catalogue full table filter interface partner region type direction search all families other coprar booking">
+          <div class="hd"><h3>Full catalogue</h3><span class="fam-count" id="catTotal"></span></div>
+          <div class="bd">
+            <div class="fchips" id="fchips">
+              <button class="fchip" data-fam="all" aria-pressed="true">All <span class="n"></span></button>
+              <button class="fchip" data-fam="ifcsum" aria-pressed="false">IFCSUM <span class="n"></span></button>
+              <button class="fchip" data-fam="coparn" aria-pressed="false">COPARN <span class="n"></span></button>
+              <button class="fchip" data-fam="customs" aria-pressed="false">Customs <span class="n"></span></button>
+              <button class="fchip" data-fam="sap" aria-pressed="false">SAP/Finance <span class="n"></span></button>
+              <button class="fchip" data-fam="vermas" aria-pressed="false">VERMAS <span class="n"></span></button>
+              <button class="fchip" data-fam="dg" aria-pressed="false">DG <span class="n"></span></button>
+              <button class="fchip" data-fam="other" aria-pressed="false">Other <span class="n"></span></button>
+            </div>
+            <div class="cattable">
+              <table class="cat">
+                <thead><tr><th>Interface</th><th>Partner / endpoint</th><th>Region</th><th>Type</th><th>Dir</th></tr></thead>
+                <tbody id="catBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /pb-interfaces -->
+
+      <div id="pb-mapping" class="pb hidden">
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="mapping two kinds code translation process translation port package equipment movement segment bgm ems architecture class">
+          <div class="hd"><h3>Two kinds of mapping — don't confuse them</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <p style="margin:0 0 12px;color:var(--muted);font-size:13.5px">Every mapping question is really one of two very different jobs. Naming which one you're in is half the diagnosis.</p>
+            <table class="cmp" style="margin-bottom:16px">
+              <thead><tr><th></th><th class="a2">Code translation</th><th class="a1">Process translation</th></tr></thead>
+              <tbody>
+                <tr><td>Answers</td><td>"What's the external code for this value?"</td><td>"What EMS movement does this message mean?"</td></tr>
+                <tr><td>Examples</td><td>Port · Package · Equipment</td><td>EMS EDI Configuration (COARRI)</td></tr>
+                <tr><td>Keyed by</td><td>Business object + context/location</td><td>Partner + EDI + BGM + segment</td></tr>
+                <tr><td>Failure looks like</td><td>"Mapping yet to be created"</td><td>File lands in EMS Gate error</td></tr>
+              </tbody>
+            </table>
+            <p style="margin:0 0 4px;color:var(--muted);font-size:12.5px">Code-translation path:</p>
+            <div class="pipe" style="margin:0 0 14px">
+              <div class="stage"><div class="k">MASTER</div><div class="n">Port·Package·Equip</div></div>
+              <div class="stage"><div class="k">MAP</div><div class="n">Code Mapping</div></div>
+              <div class="stage"><div class="k">EXT</div><div class="n">Customs code</div></div>
+              <div class="stage"><div class="k">GEN</div><div class="n">EDI Generation</div></div>
+              <div class="stage"><div class="k">OUT</div><div class="n">Partner</div></div>
+            </div>
+            <p style="margin:0 0 4px;color:var(--muted);font-size:12.5px">Process-translation path:</p>
+            <div class="pipe">
+              <div class="stage"><div class="k">PARTNER</div><div class="n">Partner + EDI</div></div>
+              <div class="stage"><div class="k">SEG</div><div class="n">BGM + Segment</div></div>
+              <div class="stage gate"><div class="k">MAP</div><div class="n">EMS Movement Map</div></div>
+              <div class="stage"><div class="k">GATE</div><div class="n">EMS Gate</div></div>
+              <div class="stage"><div class="k">EMS</div><div class="n">EMS</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="diagnostic matrix which mapping family symptom port package equipment movement partner generic iso depot check first">
+          <div class="hd"><h3>Which mapping family? · symptom → area</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd" style="padding:4px 6px 6px">
+            <table class="tax">
+              <thead><tr><th style="width:54%">Symptom</th><th>Check first</th></tr></thead>
+              <tbody>
+                <tr style="cursor:default"><td>Customs port can't be derived / IGM mapping error</td><td class="owner">IGM Port Mapping</td></tr>
+                <tr style="cursor:default"><td>Customs package representation issue</td><td class="owner">IGM Package Mapping</td></tr>
+                <tr style="cursor:default"><td>Customs equipment representation issue</td><td class="owner">IGM Equipment Mapping</td></tr>
+                <tr style="cursor:default"><td>COARRI movement/segment not recognized at EMS Gate</td><td class="owner">EMS EDI Configuration</td></tr>
+                <tr style="cursor:default"><td>Partner A works, Partner B fails — same movement</td><td class="owner">Partner/EDI-specific movement mapping</td></tr>
+                <tr style="cursor:default"><td>Generic ISO / package / depot / general-code error</td><td class="owner">Get the error + EDI type first — don't guess the screen</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="mapping exists but still fails context location partner edi bgm segment ladder investigation corporate">
+          <div class="hd"><h3>"Mapping exists, but it still fails"</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13.5px">"I checked, there is a mapping" is not the end of it. IGM mappings carry <b style="color:var(--text)">corporate / location</b> context; COARRI mappings are <b style="color:var(--text)">Partner/EDI-specific</b> and must match the actual BGM/segment. Walk the ladder:</p>
+            <ol class="steps">
+              <li>Correct <b>mapping family</b> (Port vs Package vs Equipment vs Movement)?</li>
+              <li>Correct <b>corporate / location</b> context?</li>
+              <li>Correct <b>Partner</b>?</li>
+              <li>Correct <b>EDI</b>?</li>
+              <li>Correct <b>BGM</b>?</li>
+              <li>Correct <b>segment</b>?</li>
+              <li>Only then move on to the next validation.</li>
+            </ol>
+            <div class="callout info"><b>Location-sensitive.</b> Don't ask only "does a mapping exist?" — ask "does it exist for the applicable context/location?" A mapping present for one corporate/location can be absent for another.</div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="iso code mapping line equipment type edi eqp type 20dc 22g1 40hc 4510 20rf 2232 partner specific 5668 iso 6346 container live">
+          <div class="hd"><h3>ISO Code Mapping — Line type ↔ ISO 6346 (live)</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd" style="padding:14px 16px 6px">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13px"><b style="color:var(--text)">5,668 rows across 145 partners.</b> Maps your internal <b style="color:var(--text)">Line Equipment Type</b> to the partner's expected <b style="color:var(--text)">EDI Equipment Type</b> (ISO 6346) — partner-specific, optionally per EDI ID / Party Code. The code-translation class, live.</p>
+            <table class="cmp">
+              <thead><tr><th>Line Eqp Type</th><th class="igm">EDI (ISO 6346)</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td>20DC</td><td>22G1</td><td>20ft standard</td></tr>
+                <tr><td>20DY</td><td>2210</td><td>20ft general</td></tr>
+                <tr><td>20RF</td><td>2232</td><td>20ft reefer</td></tr>
+                <tr><td>40HC</td><td>4510</td><td>40ft high-cube</td></tr>
+              </tbody>
+            </table>
+            <p class="footnote" style="padding-bottom:8px">Same box, two vocabularies: your ops code vs the ISO 6346 code the partner parses. A missing or wrong row here is a classic equipment-mapping failure.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="package code mapping roll bags bale boxe case drum pall ctns edi package code partner tp109 edi45">
+          <div class="hd"><h3>Package Code Mapping (live)</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd" style="padding:14px 16px 6px">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13px">Maps <b style="color:var(--text)">Partner + EDI ID + Package Code → EDI Package Code</b>. Your internal package type to the short code the partner expects.</p>
+            <table class="cmp">
+              <thead><tr><th>Package Code</th><th class="igm">EDI</th><th>Package Code</th><th class="igm">EDI</th></tr></thead>
+              <tbody>
+                <tr><td>BAGS</td><td>SJ</td><td>DRUM</td><td>DR</td></tr>
+                <tr><td>BALE</td><td>BA</td><td>PALL</td><td>PF</td></tr>
+                <tr><td>BOXE</td><td>BX</td><td>CTNS</td><td>CT</td></tr>
+                <tr><td>CASE</td><td>CA</td><td>ROLL</td><td>RL</td></tr>
+              </tbody>
+            </table>
+            <p class="footnote" style="padding-bottom:8px">A valid package on the BL can still need this row to appear correctly in the EDI.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="port code mapping line port customs cnnbo cnngb cnsti cnsin party code 5671 mapping yet to be created">
+          <div class="hd"><h3>Port Code Mapping (live)</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13px"><b style="color:var(--text)">5,671 rows.</b> Maps <b style="color:var(--text)">Partner + EDI ID + Port Code → EDI Port Code</b> (optionally per Party Code) — your line port code to the partner/customs port code. E.g. <span class="k-code">CNNBO→CNNGB</span>, <span class="k-code">CNSTI→CNSIN</span>. This is the mandatory Line↔Customs mapping whose absence triggers <span class="k-code">Mapping yet to be created</span> for IGM.</p>
+            <p class="footnote">Some rows show in red on-screen — likely inactive/flagged entries.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="edi depot mapping lrp depot code edi depot port sender id depot type dep-ter swire 6140">
+          <div class="hd"><h3>EDI Depot Mapping (live)</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13px"><b style="color:var(--text)">6,140 rows.</b> Maps your long <b style="color:var(--text)">LRP Depot Code → EDI Depot Code</b>, scoped by <b style="color:var(--text)">Port Code, Sender ID and Depot Type</b>. E.g. <span class="k-code">BEANRDDDP→DP</span> (port BEANR, sender SWIRE, type DEP-TER), <span class="k-code">CAEDMDOCT→OCT</span>. Depot identity is what EMS movement validation compares against.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="general edi code mapping agency edi name partner code edi type ignore move ansi322 x12 griffin classification 615">
+          <div class="hd"><h3>General EDI Code Mapping (live)</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13px"><b style="color:var(--text)">615 rows.</b> The catch-all code table: <b style="color:var(--text)">Agency + EDI Name + Partner Code + EDI Code → EDI Type 1/2/3</b> (with Status). One documented use classifies partner codes as <span class="k-code">Ignore Move</span> — e.g. partner GRIFFIN on <span class="k-code">ANSI322</span> flags codes A, AC, AL, B, CT, GR, I as Ignore Move.</p>
+            <div class="callout"><b>Two things worth noting.</b> (1) <b>ANSI322</b> means you also exchange <b>ANSI X12</b>, not only EDIFACT — see Foundations. (2) The exact runtime effect of "Ignore Move" isn't confirmed here <span class="prov gap"><span class="dot gap"></span>behaviour gap</span> — it flags codes to be ignored, but whether that skips inbound processing or suppresses outbound generation needs confirming.</div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="generic specialized iso code mapping igm equipment package port wrong master gap documented interchangeable">
+          <div class="hd"><h3>Generic ≠ specialized — fix the right master</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd" style="padding:4px 6px 12px">
+            <table class="cmp">
+              <thead><tr><th>Generic screen (your menu)</th><th class="igm">Documented specialized</th></tr></thead>
+              <tbody>
+                <tr><td>ISO Code Mapping <span class="prov gap" style="margin-left:4px"><span class="dot gap"></span>fields gap</span></td><td>IGM Equipment Mapping <span class="prov doc" style="margin-left:4px"><span class="dot doc"></span>doc</span></td></tr>
+                <tr><td>Package Code Mapping <span class="prov gap" style="margin-left:4px"><span class="dot gap"></span>fields gap</span></td><td>IGM Package Mapping <span class="prov doc" style="margin-left:4px"><span class="dot doc"></span>doc</span></td></tr>
+                <tr><td>Port Code Mapping <span class="prov gap" style="margin-left:4px"><span class="dot gap"></span>fields gap</span></td><td>IGM Port Mapping <span class="prov doc" style="margin-left:4px"><span class="dot doc"></span>doc</span></td></tr>
+              </tbody>
+            </table>
+            <p class="footnote" style="padding:0 6px">The IGM specialized mappings are fully documented; the generic menu screens' exact fields are not. Don't assume a generic screen feeds every IGM process or shares its fields. When a ticket just says "package mapping issue," the first question is always <b style="color:var(--text)">which EDI / process?</b></p>
+          </div>
+        </div>
+
+      </div><!-- /pb-mapping -->
+
+      <div id="pb-setup" class="pb hidden">
+
+        <div class="card" data-searchable data-prov="inferred" data-keywords="eight questions edi interface who what input output translate endpoint trigger module tracker model mental setup">
+          <div class="hd"><h3>The eight questions of any EDI interface</h3><span class="prov inf"><span class="dot inf"></span>learning model</span></div>
+          <div class="bd">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13.5px">A lens for reading the setup screens. (The sources don't document this exact internal sequence — it's a model for understanding.)</p>
+            <ol class="steps">
+              <li><b>Who?</b> — Partner (EDI Partner Details)</li>
+              <li><b>What?</b> — EDI / document / message (EDI Doc Configuration)</li>
+              <li><b>In or out?</b> — Inbound / Outbound (EDI Input / JSON Input Config)</li>
+              <li><b>How are values translated?</b> — Port / Package / ISO / Depot / Movement mappings</li>
+              <li><b>Where?</b> — Endpoint (END Point Configuration)</li>
+              <li><b>When is it initiated?</b> — Trigger / Request (EDI Trigger Service)</li>
+              <li><b>Which module owns the data?</b> — Booking / BL / Schedule / EMS…</li>
+              <li><b>What happened?</b> — EDI Tracker / Dashboard / EMS Gate</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="four layer troubleshooting model business data mapping interpretation infrastructure transmission target validation classify capstone">
+          <div class="hd"><h3>Four-layer troubleshooting model</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <p style="margin:0 0 12px;color:var(--muted);font-size:13.5px">Every "EDI isn't working" ticket lands in one of four layers. Tap to see what belongs there — and a classic failure.</p>
+            <div class="classify four">
+              <button class="branch" data-branch="L1"><div class="bt"><span class="glyph g-biz">1</span>Business data</div><div class="bd2">Booking, BL, Vessel/Voyage, container, Work Order.</div></button>
+              <button class="branch" data-branch="L2"><div class="bt"><span class="glyph g-map">2</span>Interpretation / mapping</div><div class="bd2">Port, Package, Equipment, movement mapping.</div></button>
+              <button class="branch" data-branch="L3"><div class="bt"><span class="glyph g-inf">3</span>Infrastructure / transport</div><div class="bd2">FTP, SFTP, Email, HTTP delivery.</div></button>
+              <button class="branch" data-branch="L4"><div class="bt"><span class="glyph g-ok">4</span>Target validation</div><div class="bd2">EMS Gate and other business rules.</div></button>
+            </div>
+            <div class="detail" id="d-L1">
+              <h4><span class="prov doc"><span class="dot doc"></span>Documented</span> Layer 1 · Business data</h4>
+              <p style="color:var(--muted);font-size:13.5px;margin:0">Is the underlying transaction right and at the required status? The Dashboard auto-fetches Vessel/Voyage/Bound/POL from Service, so wrong schedule data → wrong EDI. Classic: <b style="color:var(--text)">COPRAR missing TMP</b> because reefer temperature isn't maintained — fix the data, not the mapping.</p>
+            </div>
+            <div class="detail" id="d-L2">
+              <h4><span class="prov doc"><span class="dot doc"></span>Documented</span> Layer 2 · Interpretation / mapping</h4>
+              <p style="color:var(--muted);font-size:13.5px;margin:0">Can the values be represented for the partner? Missing Port Mapping → "Mapping yet to be created." Wrong segment for a partner's movement → EMS Gate error. See the <b style="color:var(--text)">Mapping</b> tab.</p>
+            </div>
+            <div class="detail" id="d-L3">
+              <h4><span class="prov doc"><span class="dot doc"></span>Documented</span> Layer 3 · Infrastructure / transport</h4>
+              <p style="color:var(--muted);font-size:13.5px;margin:0">Can the file actually travel? Tracker records Email / FTP / SFTP / HTTP dates. File correct but not received → <b style="color:var(--text)">Resend</b>, don't rebuild the transaction.</p>
+            </div>
+            <div class="detail" id="d-L4">
+              <h4><span class="prov doc"><span class="dot doc"></span>Documented</span> Layer 4 · Target validation</h4>
+              <p style="color:var(--muted);font-size:13.5px;margin:0">Received and interpreted, but the target module rejects it. EMS Gate applies business rules (BC, PA, IW, QM, duplicates). Fix the owning module; the back job auto-reprocesses.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="infrastructure screens known gap partner input doc endpoint trigger settings json schedule ems configuration tracker boundary">
+          <div class="hd"><h3>Infrastructure screens — known vs gap</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd" style="padding:4px 6px 6px">
+            <table class="tax">
+              <thead><tr><th style="width:158px">Screen</th><th>Source-supported understanding</th></tr></thead>
+              <tbody>
+                <tr style="cursor:default"><td>EDI Partner Details</td><td class="owner">Partner identity is fundamental; Tracker carries Partner ID/Name. <span class="prov gap"><span class="dot gap"></span>fields gap</span></td></tr>
+                <tr style="cursor:default"><td>EDI Input Config</td><td class="owner">Inbound is documented; input-layout fields <span class="prov gap"><span class="dot gap"></span>gap</span></td></tr>
+                <tr style="cursor:default"><td>EDI Doc Configuration</td><td class="owner">Distinct doc-definition screen; fields <span class="prov gap"><span class="dot gap"></span>gap</span></td></tr>
+                <tr style="cursor:default"><td>END Point Configuration</td><td class="owner">Tracker proves FTP/SFTP/Email/HTTP; endpoint fields <span class="prov gap"><span class="dot gap"></span>gap</span></td></tr>
+                <tr style="cursor:default"><td>EDI Trigger Service</td><td class="owner">Distinct screen; trigger logic <span class="prov gap"><span class="dot gap"></span>gap</span></td></tr>
+                <tr style="cursor:default"><td>EDI Settings / Configuration</td><td class="owner">Two separate screens; responsibilities <span class="prov gap"><span class="dot gap"></span>gap</span></td></tr>
+                <tr style="cursor:default"><td>JSON Input Configuration</td><td class="owner">Separate integration path; schema/target <span class="prov gap"><span class="dot gap"></span>gap</span></td></tr>
+                <tr style="cursor:default"><td>Schedule EDI Configuration</td><td class="owner">Schedule data clearly feeds EDI; fields <span class="prov gap"><span class="dot gap"></span>gap</span></td></tr>
+                <tr style="cursor:default"><td>EMS EDI Configuration</td><td class="owner">Strongly documented — partner/EDI movement interpretation <span class="prov doc"><span class="dot doc"></span>doc</span></td></tr>
+                <tr style="cursor:default"><td>EDI Tracker</td><td class="owner">Fully documented operational monitoring <span class="prov doc"><span class="dot doc"></span>doc</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="misattribution coprar tmp temperature reefer rng schedule not ready reprocess business data trap looks like setup">
+          <div class="hd"><h3>Two "looks like setup, isn't" traps</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <h4 style="font-size:13.5px;margin:0 0 6px">COPRAR missing the TMP (temperature) segment</h4>
+            <p style="color:var(--muted);font-size:13px;margin:0 0 14px">TMP carries a reefer's set temperature. If temperature (even 0) is maintained, TMP shows; if not, the TMP and RNG segments simply don't appear. <b style="color:var(--text)">Don't change the mapping</b> — maintain the temperature value and unit first. Pure Layer-1 business data.</p>
+            <h4 style="font-size:13.5px;margin:0 0 6px">EDI errored because the schedule wasn't ready</h4>
+            <p style="color:var(--muted);font-size:13px;margin:0">If schedule details are created after the file already errored, create/complete them, then <b style="color:var(--text)">reprocess in EDI Tracker</b> — the file can move to Completed. The fix lives in Schedules, not EDI setup.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="end point configuration transport sftp ftp as2 web service share path enterprise dt schedule port directory url 196 connection keys rsa dsa">
+          <div class="hd"><h3>END Point Configuration — how EDI travels</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13px"><b style="color:var(--text)">196 endpoints across 160 partners</b> — the transport boundary (Layer 3). Four channel tabs: FTP/SFTP, Share Path, AS2, Web Service.</p>
+            <div class="fam">
+              <div class="f"><span class="code">Protocol</span><div class="fd">SFTP on 190 · FTP on 6 — SFTP is the norm.</div></div>
+              <div class="f"><span class="code">Transfer API</span><div class="fd">Enterprise DT on all 196 — the managed file-transfer engine.</div></div>
+              <div class="f"><span class="code">Mode / Type</span><div class="fd">Active (192) · ASCII (195).</div></div>
+              <div class="f"><span class="code">Per endpoint</span><div class="fd">URL, port, user, directory, RSA/DSA keys, encryption, schedule window &amp; days, file count.</div></div>
+            </div>
+            <div class="callout info"><b>This is why a valid file can still fail.</b> Generation and delivery are separate — a correct EDI can sit undelivered if the endpoint (host, key, schedule) is wrong. That's the Resend vs Re-initiate split.</div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="edi rule configuration ems bkg bl documentations customer type movement code edi code port shipper consignee notify mapping 11145 rule layer lode rcve dche">
+          <div class="hd"><h3>EDI Rule Configuration — the rule layer</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13px"><b style="color:var(--text)">11,145 rules</b> across three tabs — <b style="color:var(--text)">EMS</b>, <b style="color:var(--text)">BKG-BL</b>, <b style="color:var(--text)">Documentations</b>. Each maps a customer/party + port + movement to the external <b style="color:var(--text)">EDI Code</b> a partner expects.</p>
+            <div class="fam">
+              <div class="f"><span class="code">Customer Type</span><div class="fd">AP · SH (shipper) · BP · CN (consignee) · FP · NT (notify) — the party role.</div></div>
+              <div class="f"><span class="code">Movement Code</span><div class="fd">LODE · RCVE · DCHE · DVAN · PVAN … the EMS movements.</div></div>
+              <div class="f"><span class="code">EDI Code</span><div class="fd">109 · 119 · AE · CO · LD … the external value it maps to.</div></div>
+              <div class="f"><span class="code">Scope</span><div class="fd">Per Partner + EDI + Customer + Port / Country.</div></div>
+            </div>
+            <p class="footnote">The value/rule layer that sits alongside the code mappings — validations and code translation applied at generation.</p>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="documented" data-keywords="edi trigger service edi type writer mode insert doc type rule code scope agency schedule partner interval run timing inbound customer automation when fires">
+          <div class="hd"><h3>EDI Trigger Service — when generation fires</h3><span class="prov doc"><span class="dot doc"></span>your config</span></div>
+          <div class="bd">
+            <p style="margin:0 0 10px;color:var(--muted);font-size:13px">The "verb" of the pipeline — what makes an EDI actually run. Its field set points to <b style="color:var(--text)">scheduled / scoped automation</b>:</p>
+            <div class="fam">
+              <div class="f"><span class="code">EDI Type · Writer · Doc Type</span><div class="fd">Which interface + writer produces the file.</div></div>
+              <div class="f"><span class="code">EDI Mode</span><div class="fd">e.g. Insert — how the run is applied.</div></div>
+              <div class="f"><span class="code">Scope Type · Is Customer</span><div class="fd">Agency-scoped, customer-scoped (Yes/No), plus New Rule.</div></div>
+              <div class="f"><span class="code">Sched Partner · Interval · Run Timing · Rec Count</span><div class="fd">The scheduling controls — partner, interval, timing, batch size.</div></div>
+            </div>
+            <div class="callout"><b>Calibrated:</b> the fields (Interval, Run Timing, Sched Partner, Scope) strongly indicate a scheduler/trigger, but the exact firing mechanism isn't confirmed from the screen alone <span class="prov gap"><span class="dot gap"></span>mechanism gap</span>. It pairs with IDB Configuration (what to build) as the "when to build it".</div>
+          </div>
+        </div>
+
+        <div class="card" data-searchable data-prov="inferred" data-keywords="three layers business integration control external big picture model capstone outbound inbound">
+          <div class="hd"><h3>The whole thing, in three layers</h3><span class="prov inf"><span class="dot inf"></span>learning model</span></div>
+          <div class="bd">
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+              <div class="cv-node" style="text-align:center;width:100%">Business — Schedules · Booking · BL · Operations · Import Doc · EMS</div>
+              <span class="cv-arr">↓</span>
+              <div class="cv-node edi" style="text-align:center;width:100%">Integration — Partner · EDI · Rules · Mappings · Generation · Transport</div>
+              <span class="cv-arr">↓</span>
+              <div class="cv-node" style="text-align:center;width:100%">Control — EDI Tracker · EMS Gate · Reports</div>
+              <span class="cv-arr">↓</span>
+              <div class="cv-node src" style="text-align:center;width:100%">External — Terminal · Depot · Partner · Customs</div>
+            </div>
+            <p class="footnote">Arrows run both ways. Outbound: LRP business transaction → EDI → external party. Inbound: external party → EDI → LRP validation → business module.</p>
+          </div>
+        </div>
+
+      </div><!-- /pb-setup -->
+
+      <div id="pb-compare" class="pb hidden">
+        <div class="card" data-searchable data-prov="documented" data-keywords="compare coarri igm ems customs movement manifest inbound outbound families">
+          <div class="hd"><h3>COARRI vs IGM — two EDI families</h3><span class="meta">EDI is not one process</span></div>
+          <div class="bd" style="padding:4px 6px 6px">
+            <table class="cmp">
+              <thead><tr><th></th><th class="coarri">COARRI → EMS</th><th class="igm">IGM → Customs</th></tr></thead>
+              <tbody>
+                <tr><td>Orientation</td><td>Movement-oriented</td><td>Manifest / document</td></tr>
+                <tr><td>Direction</td><td>Partner → LRP (inbound)</td><td>LRP → customs (outbound)</td></tr>
+                <tr><td>Strong linkage</td><td>EMS</td><td>Documentation</td></tr>
+                <tr><td>Mapping type</td><td>Partner / movement</td><td>Package / Equipment / Port</td></tr>
+                <tr><td>Validated at</td><td>EMS Gate (movement)</td><td>IGM Generation (prereqs)</td></tr>
+                <tr><td>Upstream deps</td><td>Booking, Work Order, previous move</td><td>Import Documentation, MCN, mappings</td></tr>
+                <tr><td>Fix pattern</td><td>Correct + Reprocess</td><td>Correct prereq/mapping + Generate</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p class="footnote" style="padding:0 4px">Two patterns, one console. As more flows arrive (VGM, schedule EDI, WAR), each becomes another tab here — the classify-first structure stays the same.</p>
+      </div>
+
+      <div id="pb-trainer" class="pb hidden">
+        <div class="card" data-searchable data-prov="documented" data-keywords="troubleshooter ticket trainer quiz practice scenario diagnose owner module test yourself">
+          <div class="hd"><h3>Ticket trainer</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+          <div class="bd">
+            <div class="trainer-top">
+              <p style="margin:0;color:var(--muted);font-size:13.5px;max-width:52ch">Read each ticket, pick the module you'd investigate first, then check yourself. The habit to build: <b style="color:var(--text)">find the owning module, not an EDI screen to change.</b></p>
+              <span class="score" id="score">Correct <b id="scoreN">0</b> / <span id="scoreT">0</span></span>
+            </div>
+            <div style="margin-top:10px"><button class="btn" id="resetQuiz">Reset quiz</button></div>
+          </div>
+        </div>
+        <div id="tickets"></div>
+        <div class="card" data-searchable data-prov="documented" data-keywords="cheat sheet symptom first place investigate answer key summary">
+          <div class="hd"><h3>Support cheat sheet</h3><span class="meta">answer key</span></div>
+          <div class="bd gloss">
+            <details><summary><span class="abbr">BL not in IGM</span></summary><div class="gbody">Import Documentation — was it saved?</div></details>
+            <details><summary><span class="abbr">IGM: mapping missing</span></summary><div class="gbody">The applicable IGM mapping; documented example is Port Mapping (Line ↔ Customs).</div></details>
+            <details><summary><span class="abbr">IGM commodity unexpected</span></summary><div class="gbody">Check for an approved MCN — it overrides the original commodity.</div></details>
+            <details><summary><span class="abbr">COARRI not recognized</span></summary><div class="gbody">Partner/EDI + BGM/segment mapping in EMS EDI setup.</div></details>
+            <details><summary><span class="abbr">Duplicate in EMS Gate</span></summary><div class="gbody">Movement Entry duplicate — Action Not Required; clear manually.</div></details>
+            <details><summary><span class="abbr">BC error</span></summary><div class="gbody">Booking (container not back-updated).</div></details>
+            <details><summary><span class="abbr">PA error</span></summary><div class="gbody">Current vs previous Terminal/Depot.</div></details>
+            <details><summary><span class="abbr">IW error</span></summary><div class="gbody">Work Order still in Draft.</div></details>
+            <details><summary><span class="abbr">QM error</span></summary><div class="gbody">Movement sequence — await the prerequisite move.</div></details>
+            <details><summary><span class="abbr">RCVS Booking mandatory</span></summary><div class="gbody">RCVS Booking No → preceding SNTS fallback.</div></details>
+            <details><summary><span class="abbr">Missing from COPRAR</span></summary><div class="gbody">BL existence / status (Draft or none excluded).</div></details>
+            <details><summary><span class="abbr">TMP/RNG absent</span></summary><div class="gbody">Reefer temperature value/unit not maintained.</div></details>
+            <details><summary><span class="abbr">Partner didn't receive</span></summary><div class="gbody">EDI Tracker → Resend (outbound only).</div></details>
+            <details><summary><span class="abbr">Failed, now corrected</span></summary><div class="gbody">EDI Tracker → Re-initiate (new Request ID).</div></details>
+            <details><summary><span class="abbr">Sent but rejected</span></summary><div class="gbody">Tracker → View File / View Error, then fix the owning source.</div></details>
+            <details><summary><span class="abbr">One user can't see it</span></summary><div class="gbody">Role / access rights, not a missing record.</div></details>
+            <details><summary><span class="abbr">Schedule fixed after fail</span></summary><div class="gbody">Reprocess in EDI Tracker.</div></details>
+          </div>
+        </div>
+      </div><!-- /pb-trainer -->
+
+    </div>
+
+    <!-- ============ REFERENCE ============ -->
+    <div>
+      <div class="col-head">
+        <span class="tag">Reference</span>
+        <div><h2>Screen map</h2><p>Every menu item, grouped by function. Honest about what isn't documented yet.</p></div>
+      </div>
+
+      <div class="card">
+        <div class="hd"><h3>The EDI vertical, by layer</h3><span class="meta" id="scount"></span></div>
+        <div class="bd" id="layers"></div>
+      </div>
+
+      <div class="card" data-searchable data-prov="standard" data-keywords="glossary edifact terms segments messages coarri coprar codeco iftmin vermas cuscar contrl aperak iso 6346 un locode bgm interchange baplie movins coparn">
+        <div class="hd"><h3>Standards glossary</h3><span class="prov std"><span class="dot std"></span>global</span></div>
+        <div class="bd gloss">
+          <details><summary><span class="abbr">EDIFACT</span><span class="nm">the syntax</span></summary><div class="gbody">UN standard for EDI: messages built from segments and data elements, wrapped in interchange / group / message envelopes.</div></details>
+          <details><summary><span class="abbr">Interchange</span><span class="nm">UNB … UNZ</span></summary><div class="gbody">Outermost envelope — sender, receiver, date, control reference. UNZ echoes the reference back as an integrity check.</div></details>
+          <details><summary><span class="abbr">Message</span><span class="nm">UNH … UNT</span></summary><div class="gbody">One business document. UNH names it as type:version:release:agency (e.g. COARRI:D:95B:UN).</div></details>
+          <details><summary><span class="abbr">Segment</span><span class="nm">BGM, DTM, LOC…</span></summary><div class="gbody">A line of related data elements. Mandatory or Conditional; can repeat. BGM = beginning of message; LOC = location; EQD = equipment.</div></details>
+          <details><summary><span class="abbr">COPRAR</span><span class="nm">load/discharge order</span></summary><div class="gbody">Line/agent → terminal: order to load or discharge containers. In LRP: the EDI5 Load List.</div></details>
+          <details><summary><span class="abbr">COARRI</span><span class="nm">load/discharge report</span></summary><div class="gbody">Terminal → line: confirmation that containers were loaded/discharged from the vessel. LRP turns it into EMS movements.</div></details>
+          <details><summary><span class="abbr">CODECO</span><span class="nm">gate-in/out report</span></summary><div class="gbody">Terminal/depot → line: land-side gate moves (truck, rail, barge). Replaced the older COMORE message.</div></details>
+          <details><summary><span class="abbr">COPARN</span><span class="nm">container announcement</span></summary><div class="gbody">Container announcement / release exchanged between line and terminal.</div></details>
+          <details><summary><span class="abbr">BAPLIE</span><span class="nm">bayplan</span></summary><div class="gbody">Stowage plan listing every occupied position on the vessel (bay-row-tier).</div></details>
+          <details><summary><span class="abbr">MOVINS</span><span class="nm">stowage instruction</span></summary><div class="gbody">Line → terminal: how to stow containers on the vessel.</div></details>
+          <details><summary><span class="abbr">IFTMIN</span><span class="nm">shipping instruction</span></summary><div class="gbody">Consignment instruction to the carrier (ANSI X12 equivalent: 304).</div></details>
+          <details><summary><span class="abbr">IFTMBC</span><span class="nm">booking confirmation</span></summary><div class="gbody">Line → customer confirmation of a booking; may carry the VGM cut-off.</div></details>
+          <details><summary><span class="abbr">VERMAS</span><span class="nm">verified gross mass</span></summary><div class="gbody">The SOLAS VGM report — a container's verified weight, exchanged among shipper, weighing facility, terminal and line.</div></details>
+          <details><summary><span class="abbr">CUSCAR</span><span class="nm">customs cargo report</span></summary><div class="gbody">Carrier → customs cargo report / manifest. The global analogue of LRP's IGM.</div></details>
+          <details><summary><span class="abbr">CONTRL</span><span class="nm">syntax ACK</span></summary><div class="gbody">Acknowledges an interchange at the syntax level — received (technical) and accepted/rejected (functional). Not business content.</div></details>
+          <details><summary><span class="abbr">APERAK</span><span class="nm">application ACK</span></summary><div class="gbody">Application error &amp; acknowledgment — reports content/business errors, deeper than CONTRL.</div></details>
+          <details><summary><span class="abbr">ISO 6346</span><span class="nm">container code</span></summary><div class="gbody">Standard for container identification and the 4-char size/type code (22G1 = 20ft standard, 45G1 = 40ft high-cube). Managed by BIC.</div></details>
+          <details><summary><span class="abbr">UN/LOCODE</span><span class="nm">port code</span></summary><div class="gbody">UN code for ports, terminals and locations (INMAA = Chennai). Used on bills of lading and customs filings.</div></details>
+        </div>
+      </div>
+
+      <div class="card" data-searchable data-prov="inferred" data-keywords="cross vertical linkage booking bl schedules operations ems accounting">
+        <div class="hd"><h3>Cross-vertical dependencies</h3><span class="prov inf"><span class="dot inf"></span>learning model</span></div>
+        <div class="bd">
+          <div class="cvmap">
+            <div class="cv-row"><span class="cv-node src">Customer Service · Booking</span><span class="cv-arr">→</span><span class="cv-node edi">EDI</span><span class="cv-arr">·</span><span class="owner">BC error traces here</span></div>
+            <div class="cv-row"><span class="cv-node src">Documentation · BL</span><span class="cv-arr">→</span><span class="cv-node">Import Documentation (SAVE)</span><span class="cv-arr">→</span><span class="cv-node edi">IGM EDI</span></div>
+            <div class="cv-row"><span class="cv-node src">Schedules · Vessel/Voyage/Bound</span><span class="cv-arr">→</span><span class="cv-node edi">ITT</span><span class="cv-arr">·</span><span class="owner">BM / YM / VM</span></div>
+            <div class="cv-row"><span class="cv-node src">Operations · Work Order</span><span class="cv-arr">→</span><span class="cv-node edi">LODE</span><span class="cv-arr">·</span><span class="owner">IW error</span></div>
+            <div class="cv-row"><span class="cv-node src">EMS · Depot/Terminal</span><span class="cv-arr">→</span><span class="cv-node edi">COARRI</span><span class="cv-arr">·</span><span class="owner">PA error</span></div>
+            <div class="cv-row"><span class="cv-node src">Accounting · Agency</span><span class="cv-arr">→</span><span class="cv-node edi">Disbursement/WAR EDI</span></div>
+          </div>
+          <p class="footnote">Central facts are documented; the diagram's shape is a functional learning model, not a system/interface architecture.</p>
+        </div>
+      </div>
+
+      <div class="card" data-searchable data-prov="documented" data-keywords="dependency matrix lrp vertical schedules booking documentation import mcn equipment port operations ems work order movement accounting terminal investigate first where to look">
+        <div class="hd"><h3>Dependency matrix — where to look first</h3><span class="prov doc"><span class="dot doc"></span>New_knowledge_base</span></div>
+        <div class="bd" style="padding:4px 6px 6px;overflow-x:auto">
+          <table class="cmp" style="min-width:440px">
+            <thead><tr><th>Vertical</th><th class="a2">Feeds EDI</th><th class="a1">Check first</th></tr></thead>
+            <tbody>
+              <tr><td>Schedules</td><td>Service / Vessel / Voyage / Bound / port</td><td>Schedule/Voyage data</td></tr>
+              <tr><td>Customer Service</td><td>Booking / shipment context</td><td>Booking</td></tr>
+              <tr><td>Documentation</td><td>BL, cargo, package, routing</td><td>BL / Import Doc</td></tr>
+              <tr><td>Import Doc</td><td>Import BL (IGM prerequisite)</td><td>Import Documentation</td></tr>
+              <tr><td>MCN</td><td>Latest approved commodity</td><td>Approved MCN</td></tr>
+              <tr><td>Equipment</td><td>Container identity</td><td>Equipment + mapping</td></tr>
+              <tr><td>Port master</td><td>Line port identity</td><td>Port + customs mapping</td></tr>
+              <tr><td>Operations</td><td>Operational container/vessel</td><td>Operations + BL eligibility</td></tr>
+              <tr><td>EMS</td><td>Movement processing</td><td>EMS Gate</td></tr>
+              <tr><td>Work Order</td><td>Work Order status</td><td>Work Order</td></tr>
+              <tr><td>Movement Entry</td><td>Movement history</td><td>Duplicate / PA / sequence</td></tr>
+              <tr><td>Accounting</td><td>Agency / WAR / disbursement</td><td>Accounting master</td></tr>
+              <tr><td>Terminal / ext.</td><td>Required external format / codes</td><td>External req + LRP mapping</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" data-searchable data-prov="gap" data-keywords="gap register unknown idb tracker cpanel integration dashboard global counter json">
+        <div class="hd"><h3>Known gaps</h3><span class="prov gap"><span class="dot gap"></span>not yet documented</span></div>
+        <div class="bd">
+          <p style="margin:0 0 10px;color:var(--muted);font-size:13.5px">Deliberately left undefined rather than guessed. Good candidates for the next knowledge drop:</p>
+          <div class="links" id="gaps" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer class="foot">
+  <div>LRP EDI Console · working prototype — knowledge current to the three loaded lessons.</div>
+  <div class="srcs">sources: <span class="prov doc" style="padding:1px 6px">New_knowledge_base</span> <span class="prov doc" style="padding:1px 6px">contracts_knowledge_base</span> <span class="prov doc" style="padding:1px 6px">December_CR</span></div>
+</footer>
+
+<script>
+"use strict";
+
+/* ---------------- data ---------------- */
+const ERRORS = [
+  {code:"BC",name:"Booking Confirmation Error",cause:"Container movement received, but the container isn't backdated in the Booking.",fix:"Update the SNTS move and back-update the Booking. When the back job runs, Auto Reprocess approves it.",owner:"Booking",mech:"auto",src:"New_knowledge_base"},
+  {code:"PA",name:"Previous Activity Error",cause:"Terminal/Depot of the current movement doesn't match the previous valid movement.",fix:"Correct/match the Terminal or Depot. Back job → Auto Reprocess approves the Gate record.",owner:"EMS / Operations",mech:"auto",src:"December_CR"},
+  {code:"IW",name:"Invalid Work Order Error",cause:"A LODE movement is processed while its Work Order is still in Draft status.",fix:"Approve the Work Order — the movement then becomes eligible for reprocessing.",owner:"Operations · Work Order",mech:"auto",src:"December_CR"},
+  {code:"QM",name:"Movement Sequence Error",cause:"Movements arrive out of the configured sequence.",fix:"Once the missing/prerequisite movement is received, the back job's Auto Reprocess validates the sequence and approves the record.",owner:"EMS",mech:"auto",src:"New_knowledge_base"},
+  {code:"BM",name:"Bound Mandatory",cause:"ITT movement is missing its Bound.",fix:"Supply the Bound on the voyage / movement.",owner:"Schedules",mech:"manual",src:"New_knowledge_base"},
+  {code:"YM",name:"Voyage Mandatory",cause:"ITT movement is missing its Voyage.",fix:"Supply the Voyage.",owner:"Schedules",mech:"manual",src:"New_knowledge_base"},
+  {code:"VM",name:"Vessel Mandatory",cause:"ITT movement is missing its Vessel.",fix:"Supply the Vessel.",owner:"Schedules",mech:"manual",src:"New_knowledge_base"},
+  {code:"OM",name:"Invalid Subsequent Move",cause:"ITT movement sequence is broken — expected RCVE → TRFE.",fix:"Correct the movement sequence.",owner:"EMS",mech:"manual",src:"New_knowledge_base"},
+  {code:"IA",name:"Invalid Next Activity",cause:"The next activity is invalid for the ITT sequence.",fix:"Correct the movement sequence.",owner:"EMS",mech:"manual",src:"New_knowledge_base"}
+];
+
+const LAYERS = [
+  {id:"A",name:"Base setup",stage:"setup",screens:[
+    {n:"EDI Module Options",g:"Configurations",prov:"gap",d:"Primary EDI setup screen. Individual fields not yet documented — sits at the start of the setup layer.",links:[]},
+    {n:"EDI Rule Configuration",g:"Configurations",prov:"documented",d:"Per customer/partner/EDI rules across EMS · BKG-BL · Documentations tabs — 11,145 rows mapping Customer Type + Port + Movement Code → external EDI Code. The value/rule layer feeding generation.",links:["rule","movement","edi code"]},
+    {n:"EDI Code Mapping",g:"Configurations",prov:"documented",d:"Core translation concept: LRP code → mapping → partner/customs code. IGM proves the pattern (Port/Package/Equipment mappings).",links:["mapping"]},
+    {n:"Email Notification",g:"Configurations",prov:"gap",d:"EDI-related notification. Keep separate from Admin EMail Configuration until sources define each.",links:[]}
+  ]},
+  {id:"B",name:"Mapping — translate LRP ↔ external codes",stage:"map",screens:[
+    {n:"ISO Code Mapping",g:"Mapping",prov:"documented",d:"Maps Line Equipment Type → EDI Equipment Type (ISO 6346), partner-specific — 5,668 rows / 145 partners. E.g. 20DC→22G1, 40HC→4510, 20RF→2232. Optionally keyed by EDI ID / Party Code.",links:["equipment","ISO 6346"]},
+    {n:"Package Code Mapping",g:"Mapping",prov:"documented",d:"Maps Partner+EDI+Package Code → EDI Package Code (e.g. BAGS→SJ, DRUM→DR, PALL→PF). Your internal package type to the partner's short code. See the Mapping tab.",links:["package"]},
+    {n:"Port Code Mapping",g:"Mapping",prov:"documented",d:"Maps Partner+EDI+Port Code → EDI Port Code (optionally per Party Code) — 5,671 rows, e.g. CNNBO→CNNGB. The mandatory Line↔Customs mapping; if missing, IGM reports 'Mapping yet to be created.'",links:["port","IGM"]},
+    {n:"EDI Depot Mapping",g:"Mapping",prov:"documented",d:"Maps LRP Depot Code → EDI Depot Code, scoped by Port Code + Sender ID + Depot Type — 6,140 rows (e.g. BEANRDDDP→DP, sender SWIRE, DEP-TER). Depot identity drives EMS movement validation.",links:["depot","EMS"]},
+    {n:"General EDI Code Mapping",g:"Configurations",prov:"documented",d:"Catch-all code table: Agency+EDI Name+Partner Code+EDI Code → EDI Type 1/2/3 — 615 rows. Includes ANSI X12 partners (GRIFFIN/322) and 'Ignore Move' classifications (exact runtime effect unconfirmed).",links:["code","X12","ignore move"]}
+  ]},
+  {id:"C",name:"EDI definition — partner / message / file",stage:"setup",screens:[
+    {n:"EDI Partner Details",g:"Setup",prov:"documented",d:"Defines each external party in the exchange. Your live catalogue pairs an EDI type with a partner/endpoint — ~72 interfaces across AU/NZ/Pacific/China/EU/US. See the Interfaces tab. Partner-specific behaviour proven by COARRI per-partner mapping.",links:["partner","interfaces"]},
+    {n:"EMS EDI Configuration",g:"Setup",prov:"documented",d:"Holds movement-code mappings per Partner/EDI for COARRI. Unmapped code or mismatched segment (e.g. SNTS) → EMS Gate error.",links:["COARRI","EMS","mapping"]},
+    {n:"EDI Tool Configuration",g:"Setup",prov:"gap",d:"An EDI administration screen. Whether it controls conversion/parser tools is not documented.",links:[]},
+    {n:"EDI Doc Configuration",g:"Setup",prov:"inferred",d:"Defines the EDI/document types LRP produces or consumes (IFCSUM, IFTMCS, IFTDGN, COPARN, VERMAS, CUSCAR, COPRAR…). Field-level detail still pending, but the live doc list is in the Interfaces tab.",links:["document","interfaces"]},
+    {n:"EDI Configuration",g:"Setup",prov:"gap",d:"Distinct from EDI Settings & EDI Input Config (three separate menu items). Processing order unproven.",links:[]},
+    {n:"EDI Settings",g:"Setup",prov:"gap",d:"Distinct EDI administration screen. Fields pending source.",links:[]},
+    {n:"EDI Input Config",g:"Setup",prov:"gap",d:"Inbound/input processing side. Placement in the input chain needs its manual.",links:["inbound"]},
+    {n:"JSON Input Configuration",g:"Specialized",prov:"gap",d:"Suggests an input path distinct from EDIFACT. Schema, modules, transforms & validation all undocumented.",links:["inbound"]}
+  ]},
+  {id:"D",name:"Connectivity — where/how EDI travels",stage:"gen",screens:[
+    {n:"END Point Configuration",g:"Connectivity",prov:"documented",d:"The transport boundary — 196 endpoints / 160 partners across FTP/SFTP, Share Path, AS2, Web Service (SFTP dominant, via Enterprise DT). Holds URL, port, user, keys, encryption, schedule window/days, file count. See the Setup tab.",links:["transport","sftp","endpoint"]},
+    {n:"EDI Trigger Service",g:"Connectivity",prov:"inferred",d:"Fields (EDI Type/Writer/Mode, Scope, Sched Partner, Interval, Run Timing, Rec Count) point to scheduled/scoped automation — the 'when' beside IDB's 'what'. Exact firing mechanism unconfirmed.",links:["trigger","schedule"]},
+    {n:"Admin EMail Configuration",g:"Connectivity",prov:"gap",d:"Distinct from the Configurations 'Email Notification' screen. Kept separate until documented.",links:[]}
+  ]},
+  {id:"E",name:"Specialized interfaces",stage:"gen",screens:[
+    {n:"Schedule EDI Settings",g:"Specialized",prov:"inferred",d:"EDI tied to Service→Vessel→Voyage→Bound→Ports. Learn Schedules first. Difference vs Schedule EDI Configuration not documented.",links:["schedules"]},
+    {n:"Schedule EDI Configuration",g:"Specialized",prov:"gap",d:"Second schedule-EDI setup screen. Exact difference from Settings is a source gap.",links:["schedules"]},
+    {n:"IDB Settings",g:"Specialized",prov:"inferred",d:"Companion to IDB Configuration (the generation engine). Likely global/default settings for the IDB layer; exact fields not yet captured, but no longer an unknown acronym.",links:["engine"]},
+    {n:"IDB Configuration",g:"Specialized",prov:"documented",d:"The outbound EDI generation engine: 64 configs, one per Partner+EDI, each with Response Agency, OprType, Message Function, Request Type, Data/Validation/Search Query IDs, By-Voyage & MCN-Validation flags, and up to 15 Reference fields. See the Interfaces tab.",links:["engine","query","interfaces"]},
+    {n:"EDI Global Counter",g:"Specialized",prov:"gap",d:"System-level EDI administration. Sequence-number rules not documented.",links:[]}
+  ]},
+  {id:"F",name:"Processing — create / initiate",stage:"gen",screens:[
+    {n:"EDI Creation",g:"System Config",prov:"gap",d:"Distinct from EDI Request Submission and the Tracker. Represents the 'define/create' stage; own manual needed before equating with any dashboard.",links:[]},
+    {n:"EDI Request Submission",g:"Transactions",prov:"inferred",d:"Operational outbound entry: business transaction → generate → EDI Reference Number → Tracker. The documented outbound generator is called 'EDI Dashboard' (Agency→EDI Details→Service→Show→Generate); its exact correspondence to this menu item vs Integration Dashboard isn't confirmed by source.",links:["outbound","reference no","EDI Dashboard"]}
+  ]},
+  {id:"G",name:"Monitoring — what happened",stage:"track",screens:[
+    {n:"EDI Tracker",g:"Transactions",prov:"documented",d:"Control room. Search by Direction/Date/Agency/Partner/EDI ID/Status/Ref. Actions: Download, View File/Error, Resend, Re-initiate. Handles inbound & outbound; role-based visibility (e.g. EMS-only).",links:["Resend","Re-initiate","inbound","outbound"]},
+    {n:"Tracker Cpanel",g:"Transactions",prov:"gap",d:"Sits beside EDI Tracker. Additional control functions vs Tracker not documented.",links:[]},
+    {n:"Integration Dashboard",g:"Transactions",prov:"gap",d:"Integration-level visibility. Do NOT equate with the documented 'EDI Dashboard' from other manuals unless a source confirms it.",links:[]}
+  ]},
+  {id:"H",name:"Reporting — visibility & audit",stage:"module",screens:[
+    {n:"VGM EDI Report",g:"Reports",prov:"documented",d:"Verified Gross Mass. Prereqs: Booking + EMS Tracker. Shows received VGM EDI + processing/VGM status; filters by date/reader/booking/container.",links:["VGM","EMS","booking"]},
+    {n:"EMS EDI Report",g:"Reports",prov:"documented",d:"EMS↔EDI reporting. Related EMS EDI Error Movement module identifies errors, allows correction, updates reprocessed records into EMS.",links:["EMS"]},
+    {n:"SAP EDI Report",g:"Reports",prov:"documented",d:"Reports on LRP→SAP finance EDI (Phoenix is LRP's internal name). Covers Agency Commission Accrual, SAP Revenue Voyage (+MCN), Invoice XML — see the Interfaces tab, SAP/Finance family.",links:["SAP","finance","Phoenix"]},
+    {n:"EDI List",g:"Reports",prov:"gap",d:"EDI listing/report. Not proven to be the same as EDI Tracker — kept distinct.",links:[]},
+    {n:"Booking Enquiry",g:"Reports",prov:"inferred",d:"Booking is upstream of many EDI processes; it appears here as the entry context even though Booking belongs to Customer Service.",links:["booking"]}
+  ]}
+];
+
+/* ---------------- render: error taxonomy ---------------- */
+const taxBody = document.getElementById("taxBody");
+ERRORS.forEach((e,i)=>{
+  const tr=document.createElement("tr");
+  tr.dataset.searchable="1"; tr.dataset.prov="documented";
+  tr.dataset.keywords=(e.code+" "+e.name+" "+e.cause+" "+e.owner+" "+e.src+" itt gate").toLowerCase();
+  tr.innerHTML=`<td><span class="errcode">${e.code}</span></td>
+    <td>${e.name}<div class="owner" style="margin-top:2px">${e.cause}</div></td>
+    <td class="owner">${e.owner}</td>
+    <td><span class="mech ${e.mech}">${e.mech.toUpperCase()}</span></td>`;
+  const exp=document.createElement("tr");
+  exp.className="exp-row hidden";
+  exp.innerHTML=`<td colspan="4"><div class="exp-in">
+      <div class="row"><span class="l">Root cause</span><span class="v">${e.cause}</span></div>
+      <div class="row"><span class="l">Fix</span><span class="v">${e.fix}</span></div>
+      <div class="row"><span class="l">Owning module</span><span class="v">${e.owner}</span></div>
+      <div class="row"><span class="l">Source</span><span class="v"><span class="prov doc"><span class="dot doc"></span>${e.src}</span></span></div>
+    </div></td>`;
+  tr.addEventListener("click",()=>exp.classList.toggle("hidden"));
+  taxBody.appendChild(tr); taxBody.appendChild(exp);
+});
+
+/* ---------------- render: reference layers ---------------- */
+const layersEl=document.getElementById("layers");
+const provClass={documented:"doc",inferred:"inf",gap:"gap"};
+const provLabel={documented:"documented",inferred:"inferred",gap:"gap"};
+let screenTotal=0;
+LAYERS.forEach((L,li)=>{
+  const wrap=document.createElement("div"); wrap.className="layer";
+  const h=document.createElement("div"); h.className="layer-h"+(li===0?" open":"");
+  h.innerHTML=`<span class="chev">▸</span><span class="lname">${L.name}</span><span class="lcount">${L.screens.length}</span>`;
+  const body=document.createElement("div"); body.className="layer-body"+(li===0?" open":"");
+  L.screens.forEach(s=>{
+    screenTotal++;
+    const el=document.createElement("div"); el.className="screen";
+    el.dataset.searchable="1"; el.dataset.prov=s.prov; el.dataset.stage=L.stage;
+    el.dataset.keywords=(s.n+" "+s.g+" "+s.d+" "+s.links.join(" ")).toLowerCase();
+    el.innerHTML=`<div style="flex:1;min-width:0">
+        <div class="sname">${s.n}<span class="grp">${s.g}</span></div>
+        <div class="desc">${s.d}${s.links.length?`<div class="links">${s.links.map(x=>`<span class="chip">${x}</span>`).join("")}</div>`:""}</div>
+      </div>
+      <span class="right"><span class="prov ${provClass[s.prov]}"><span class="dot ${provClass[s.prov]}"></span>${provLabel[s.prov]}</span></span>`;
+    el.addEventListener("click",()=>el.classList.toggle("open"));
+    body.appendChild(el);
+  });
+  h.addEventListener("click",()=>{h.classList.toggle("open");body.classList.toggle("open");});
+  wrap.appendChild(h); wrap.appendChild(body); layersEl.appendChild(wrap);
+});
+document.getElementById("scount").textContent=screenTotal+" screens";
+
+/* ---------------- render: gap chips ---------------- */
+const gapNames=[];
+LAYERS.forEach(L=>L.screens.forEach(s=>{if(s.prov==="gap")gapNames.push(s.n);}));
+document.getElementById("gaps").innerHTML=gapNames.map(n=>`<span class="chip" style="border-color:color-mix(in srgb,var(--error) 30%,transparent);color:var(--error)">${n}</span>`).join("");
+
+/* ---------------- classify-first interaction (per group) ---------------- */
+document.querySelectorAll(".classify").forEach(group=>{
+  const bs=[...group.querySelectorAll(".branch[data-branch]")];
+  bs.forEach(b=>{
+    b.addEventListener("click",()=>{
+      const key=b.dataset.branch;
+      const already=b.getAttribute("aria-pressed")==="true";
+      bs.forEach(x=>{x.setAttribute("aria-pressed","false");const d=document.getElementById("d-"+x.dataset.branch);if(d)d.classList.remove("show");});
+      if(!already){b.setAttribute("aria-pressed","true");const d=document.getElementById("d-"+key);if(d)d.classList.add("show");}
+    });
+  });
+});
+
+/* ---------------- interactive EDIFACT sample ---------------- */
+const SEGDEF={
+  unb:"<b>UNB — Interchange header.</b> The outer envelope: who's sending (LINE), who's receiving (TERMINAL), date/time, and a control reference that UNZ must echo back.",
+  unh:"<b>UNH — Message header.</b> Starts one message and names it: COARRI, directory D, release 95B, agency UN. This is how the receiver knows which message type and version to parse.",
+  bgm:"<b>BGM — Beginning of message.</b> Document number (SN2587) and message function (9 = original). Amendments and cancellations reuse BGM with a different function code.",
+  tdt:"<b>TDT — Transport details.</b> The carrier / voyage this report belongs to. In LRP this is the Service → Vessel → Voyage context.",
+  loc:"<b>LOC — Location.</b> A port, here as UN/LOCODE <span class='k-code'>INMAA</span> (Chennai). This is exactly the value your Port Code Mapping translates to the customs port code.",
+  eqd:"<b>EQD — Equipment details.</b> Container ABCD1234567 with ISO 6346 size/type <span class='k-code'>22G1</span> (20ft standard). Your ISO / Equipment mapping converts this to the code the partner expects.",
+  unt:"<b>UNT — Message trailer.</b> Closes the message: segment count and the message reference from UNH — an integrity check.",
+  unz:"<b>UNZ — Interchange trailer.</b> Closes the envelope: number of messages and the control reference from UNB."
+};
+const ediEl=document.getElementById("edifact");
+if(ediEl){
+  const exp=document.getElementById("segExplain");
+  ediEl.querySelectorAll(".eln").forEach(l=>l.addEventListener("click",()=>{
+    ediEl.querySelectorAll(".eln").forEach(x=>x.classList.remove("active"));
+    l.classList.add("active");
+    exp.innerHTML=SEGDEF[l.dataset.seg]||"";
+  }));
+}
+
+/* ---------------- ticket trainer ---------------- */
+const TICKETS=[
+ {q:"Import BL is available in LRP, but it isn't appearing in IGM EDI Generation.",dir:"outbound / IGM",
+  opts:["Import Documentation (saved?)","IGM Port Mapping","Approved MCN","EMS EDI setup"],ans:0,
+  rc:"Import Documentation hasn't been saved. A BL only loads into IGM EDI Generation once its Import Documentation is saved.",
+  sol:["Open Import Documentation for the BL and complete it.","Save it.","Return to IGM EDI Generation → Show; the BL now loads."],
+  lesson:"Missing from EDI is not a mapping problem. Check the upstream prerequisite first.",src:"New_knowledge_base"},
+ {q:"The BL is visible in IGM, but generation says a mapping needs to be created.",dir:"outbound / IGM",
+  opts:["Import Documentation","IGM Port Mapping","Booking","Work Order"],ans:1,
+  rc:"The mandatory Line Port Code to Customs Port Code mapping is missing — the message 'Mapping yet to be created' points here.",
+  sol:["Note the port on the blocked BL.","Verify / create the IGM Port Mapping (Line ↔ Customs).","Generate the IGM again."],
+  lesson:"BL not visible = prerequisite. BL visible but blocked = mapping. Different branches.",src:"New_knowledge_base"},
+ {q:"The commodity generated in IGM is not what the user expects from the original import information.",dir:"outbound / IGM",
+  opts:["Bill of Lading","Approved MCN","IGM Package Mapping","Import Documentation"],ans:1,
+  rc:"An approved MCN (Manifest Correction Note) exists; IGM references its latest commodity details, not the original.",
+  sol:["Check whether an approved MCN exists for the BL.","Compare its latest commodity against the IGM output.","Treat IGM as wrong only if it disagrees with the approved MCN."],
+  lesson:"Ask which module owns the latest valid value — sometimes it is not the original transaction.",src:"New_knowledge_base"},
+ {q:"COARRI from Partner A keeps failing in EMS Gate. Other partners process fine.",dir:"inbound / EMS",
+  opts:["Booking","EMS EDI setup (Partner + BGM/segment)","Work Order","Schedules"],ans:1,
+  rc:"The standard EMS movement code isn't mapped for that Partner/EDI, or the incoming segment differs from the mapped one.",
+  sol:["Obtain the actual failing EDI file.","Identify Partner, EDI, BGM and segment; compare to EMS EDI setup.","Add/correct the mapping, then reprocess."],
+  lesson:"A COARRI request needs Partner + EDI + file + BGM + segment — never just 'map COARRI'.",src:"New_knowledge_base"},
+ {q:"The movement already exists, but the inbound EDI still shows in EMS Gate. Why didn't LRP remove it?",dir:"inbound / EMS",
+  opts:["EMS EDI mapping","Movement Entry duplicate","Booking","It's a system error"],ans:1,
+  rc:"It matched a duplicate condition (exact, or logical within ±5 days) and is classed Action Not Required — not an error.",
+  sol:["Confirm it meets a duplicate condition.","No business correction is needed.","Manually clear the record if nothing further is required."],
+  lesson:"Duplicate is not an error, and Action Not Required is not auto-removed.",src:"New_knowledge_base"},
+ {q:"An inbound container movement reached EMS Gate but shows a BC error.",dir:"inbound / EMS",
+  opts:["COARRI mapping","Booking","Work Order","Terminal/Depot"],ans:1,
+  rc:"The movement was received but the container isn't backdated in the Booking.",
+  sol:["Verify the Booking / container — don't change EDI mapping.","Update the SNTS move and back-update the Booking.","Let the back job run; Auto Reprocess approves the record."],
+  lesson:"The error shows in EMS Gate, but the owner is Booking.",src:"New_knowledge_base"},
+ {q:"EDI was received successfully but the movement is Not Approved with a PA error.",dir:"inbound / EMS",
+  opts:["Booking","Terminal/Depot vs previous movement","Work Order","Port Mapping"],ans:1,
+  rc:"The Terminal/Depot of the current movement doesn't match the previous valid movement.",
+  sol:["Compare current Terminal/Depot to the previous Movement Entry.","Correct/match it in the business data.","Let the back job Auto Reprocess approve it."],
+  lesson:"EDI validation can depend on historical movement data.",src:"December_CR"},
+ {q:"A LODE EDI reaches EMS Gate but returns an IW error.",dir:"inbound / EMS",
+  opts:["EMS mapping","Work Order","Booking","Schedules"],ans:1,
+  rc:"The associated Work Order is still in Draft status.",
+  sol:["Find the Work Order for the LODE movement.","Complete and approve it.","Let EMS Auto Reprocess revalidate."],
+  lesson:"An EDI error screen doesn't mean EDI owns the problem.",src:"December_CR"},
+ {q:"An RCVS movement is rejected with 'Booking number is mandatory', although the container exists.",dir:"inbound / EMS",
+  opts:["Port Mapping","RCVS Booking No → preceding SNTS","Work Order","Approved MCN"],ans:1,
+  rc:"No valid 15-digit Booking No in the RCVS, and the preceding SNTS move for that container has none either.",
+  sol:["Check the RCVS Booking No (must be valid 15-digit).","If blank, check the preceding SNTS move.","If neither has a valid value, correct the source, then reprocess."],
+  lesson:"Know the fallback chain: RCVS → SNTS → reject.",src:"New_knowledge_base"},
+ {q:"Operations can see the container, but the EDI team says it isn't coming in COPRAR.",dir:"outbound / COPRAR",
+  opts:["EDI transmission","Bill of Lading status","Port Mapping","EMS Gate"],ans:1,
+  rc:"COPRAR/EDI5 includes only Confirmed/Issued BLs; a Draft BL or no BL is excluded. Operations shows containers regardless.",
+  sol:["Retrieve the shipment in Bill of Lading.","Check the BL status.","Move it to Confirmed/Issued, then generate again."],
+  lesson:"Operational visibility is not EDI eligibility.",src:"New_knowledge_base"},
+ {q:"A reefer container is in the EDI, but the temperature (TMP/RNG) segments are missing.",dir:"outbound / COPRAR",
+  opts:["COPRAR mapping","Reefer temperature data","Port Mapping","Booking"],ans:1,
+  rc:"Temperature isn't maintained. If a value (even 0) is set, TMP shows; if not, TMP and RNG don't appear.",
+  sol:["Check the reefer temperature in the owning transaction — not the mapping.","Maintain the temperature value and unit (0 counts as maintained).","Regenerate and re-inspect the file."],
+  lesson:"A missing segment can be missing source data, not a mapping fault.",src:"New_knowledge_base"},
+ {q:"The Dashboard says the EDI was generated, but the partner says they have no file.",dir:"outbound / Tracker",
+  opts:["Re-initiate","Resend","Reset EDI","Regenerate mapping"],ans:1,
+  rc:"The correctly-generated outbound EDI simply needs retransmission.",
+  sol:["Find the outbound record in EDI Tracker (Ref ID / Partner / EDI ID).","Select it and click Resend.","It goes out via the configured FTP / SFTP / email."],
+  lesson:"Resend = send the existing file again. Don't rebuild the transaction.",src:"New_knowledge_base"},
+ {q:"An EDI request failed yesterday. The underlying data has now been corrected.",dir:"outbound / Tracker",
+  opts:["Resend","Re-initiate","Reset EDI","Do nothing"],ans:1,
+  rc:"A failed request whose cause is fixed should be re-processed — Re-initiate re-captures data and mints a new Request ID.",
+  sol:["Confirm the root cause is corrected.","Find the failed request in Tracker; click Re-initiate.","New Request ID → processes again → Completed."],
+  lesson:"Resend = send again. Re-initiate = process again.",src:"New_knowledge_base"},
+ {q:"The Dashboard shows the EDI was Sent, but the external system rejected it (Error Res.).",dir:"outbound / Tracker",
+  opts:["Resend immediately","View File / View Error, then fix the source","Re-initiate blindly","Change the mapping"],ans:1,
+  rc:"The recipient received the file but rejected some content. Sent is not Accepted.",
+  sol:["Locate the transaction in EDI Tracker by its reference.","Use View File (what was sent) and View Error (the reason).","Fix the owning source, then use the right action — resending alone won't fix a validation error."],
+  lesson:"Sent is not Accepted. Read the error before acting.",src:"New_knowledge_base"},
+ {q:"One user cannot see an EDI in Tracker that another user can see.",dir:"either / access",
+  opts:["The record is missing","Role / access rights","Transmission failure","Mapping issue"],ans:1,
+  rc:"EDI visibility is role-based — e.g. EMS EDI can be restricted to EMS users.",
+  sol:["Check the user's applicable EDI access rights.","Grant access if appropriate.","Don't assume the record is missing."],
+  lesson:"'Can't see it' is often access, not absence.",src:"New_knowledge_base"},
+ {q:"An EDI failed because schedule details weren't available. The schedule is now created.",dir:"either / Schedules",
+  opts:["Resend","Reprocess in EDI Tracker","Re-map the ports","Reset EDI"],ans:1,
+  rc:"The schedule information the file needed was created after it errored.",
+  sol:["Confirm the required schedule details now exist.","Reprocess the EDI file in EDI Tracker.","The file can move to Completed."],
+  lesson:"Fix the owning module (Schedules), then reprocess — not an EDI-setup change.",src:"New_knowledge_base"}
+];
+const tEl=document.getElementById("tickets");
+let correctCount=0;
+function renderTickets(){
+  if(!tEl)return;
+  tEl.innerHTML=""; correctCount=0;
+  const sN=document.getElementById("scoreN"), sT=document.getElementById("scoreT");
+  if(sN)sN.textContent="0"; if(sT)sT.textContent=TICKETS.length;
+  TICKETS.forEach((t,i)=>{
+    const card=document.createElement("div");
+    card.className="card ticket";
+    card.dataset.searchable="1"; card.dataset.prov="documented";
+    card.dataset.keywords=(t.q+" "+t.opts.join(" ")+" "+t.rc+" "+t.lesson+" "+t.dir).toLowerCase();
+    const optHtml=t.opts.map((o,oi)=>`<button class="opt" data-i="${oi}"><span class="mk">${String.fromCharCode(65+oi)}</span><span>${o}</span></button>`).join("");
+    const solHtml=t.sol.map(s=>`<li>${s}</li>`).join("");
+    card.innerHTML=`<div class="thd"><span class="num">#${i+1}</span><div><div class="qt">${t.q}</div><span class="dir">${t.dir}</span></div></div>
+      <div class="tbd">
+        <p class="ask">Which do you investigate first?</p>
+        <div class="opts" data-ans="${t.ans}">${optHtml}</div>
+        <div class="reveal">
+          <p class="rc"><span class="l">Root cause</span>${t.rc}</p>
+          <p class="rc"><span class="l">Solution</span></p>
+          <ol class="steps">${solHtml}</ol>
+          <p class="rc" style="margin-top:8px"><span class="l">Source</span><span class="prov doc"><span class="dot doc"></span>${t.src}</span></p>
+          <div class="lesson">${t.lesson}</div>
+        </div>
+      </div>`;
+    tEl.appendChild(card);
+    const opts=card.querySelector(".opts"), reveal=card.querySelector(".reveal");
+    opts.querySelectorAll(".opt").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        if(opts.classList.contains("locked"))return;
+        const chosen=+btn.dataset.i, ans=+opts.dataset.ans;
+        opts.classList.add("locked");
+        opts.querySelectorAll(".opt").forEach(b=>{
+          const bi=+b.dataset.i;
+          if(bi===ans)b.classList.add("correct");
+          else if(bi===chosen)b.classList.add("wrong");
+        });
+        reveal.classList.add("show");
+        if(chosen===ans){correctCount++;if(sN)sN.textContent=correctCount;}
+      });
+    });
+  });
+}
+renderTickets();
+const rq=document.getElementById("resetQuiz");
+if(rq)rq.addEventListener("click",renderTickets);
+
+/* ---------------- interface catalogue ---------------- */
+const CAT=[
+ {n:"AU Port Authority Cargo Manifest",p:"Darwin Port Operations",r:"AU",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"AU Port Authority Cargo Manifest",p:"NSW Ports",r:"AU",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"AU Port Authority Cargo Manifest",p:"Port of Brisbane",r:"AU",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"AU Port Authority Cargo Manifest",p:"Port of Townsville",r:"AU",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"AU Port Authority Cargo Manifest",p:"Victorian Ports (Melbourne)",r:"AU",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"Benline Manifest File",p:"Benline Agency",r:"Asia",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"Bonavigon Imports",p:"Bonavigon Intl Shipping",r:"Asia",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"Indonesia Benline",p:"Indonesia",r:"ID",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"Japan Manifest",p:"Japan",r:"JP",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"Ningbo Imports",p:"China Marine SA Ningbo",r:"CN",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"Shanghai Imports",p:"China Marine SA Shanghai",r:"CN",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"Tianjin Imports",p:"COSCO SA Tianjin",r:"CN",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"Qingdao Imports",p:"COSCO SA Qingdao",r:"CN",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"Unitrans Imports",p:"Guangzhou Port Unitrans",r:"CN",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"Thailand Benline",p:"Thailand",r:"TH",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"Vietnam Benline",p:"Vietnam",r:"VN",m:"IFCSUM",d:"out",fam:"ifcsum"},
+ {n:"COPARN D00B",p:"Bookings and Doc's",r:"CN",m:"COPARN",d:"out",fam:"coparn"},
+ {n:"COPARN D00B",p:"E & P",r:"CN",m:"COPARN",d:"out",fam:"coparn"},
+ {n:"COPARN D00B",p:"SZEDI (Shenzhen)",r:"CN",m:"COPARN",d:"out",fam:"coparn"},
+ {n:"COPARN D00B",p:"Ningbo Port Info & Comm",r:"CN",m:"COPARN",d:"out",fam:"coparn"},
+ {n:"COPARN D00B",p:"MITL (PNG)",r:"PG",m:"COPARN",d:"out",fam:"coparn"},
+ {n:"COPARN D00B",p:"SPICTL (PNG)",r:"PG",m:"COPARN",d:"out",fam:"coparn"},
+ {n:"COPARN D00B",p:"Penavico Xiamen",r:"CN",m:"COPARN",d:"out",fam:"coparn"},
+ {n:"COPARN D00B",p:"Xiamen Booking Agent",r:"CN",m:"COPARN",d:"out",fam:"coparn"},
+ {n:"AS Port Manifest",p:"American Samoa Govt",r:"AS",m:"Manifest",d:"out",fam:"customs"},
+ {n:"AU Cargo List",p:"Atlantis ICS",r:"AU",m:"Cargo List",d:"out",fam:"customs"},
+ {n:"AU Electronic Import Delivery Order",p:"1-Stop Connections",r:"AU",m:"Delivery Order",d:"out",fam:"customs"},
+ {n:"AU Main and Sub-Manifest",p:"Atlantis ICS",r:"AU",m:"Manifest",d:"out",fam:"customs"},
+ {n:"AU Sea Cargo Report",p:"Atlantis ICS",r:"AU",m:"Cargo Report",d:"out",fam:"customs"},
+ {n:"BE/NL Export Manifest (Cont.)",p:"Boeckmans",r:"BE/NL",m:"IFTMCS",d:"out",fam:"customs"},
+ {n:"BE/NL Export Manifest (Non-Cont.)",p:"Boeckmans",r:"BE/NL",m:"IFTMCS",d:"out",fam:"customs"},
+ {n:"BE/NL Import Manifest (Cont.)",p:"Boeckmans",r:"BE/NL",m:"IFTMCS",d:"out",fam:"customs"},
+ {n:"BE/NL Import Manifest (Non-Cont.)",p:"Boeckmans",r:"BE/NL",m:"IFTMCS",d:"out",fam:"customs"},
+ {n:"EU ENS Advance Manifest",p:"Descartes (gateway)",r:"EU",m:"ENS",d:"out",fam:"customs"},
+ {n:"US AMS Advance Manifest",p:"Descartes (gateway)",r:"US",m:"AMS",d:"out",fam:"customs"},
+ {n:"FJ Customs Export Manifest",p:"Fiji Revenue & Customs",r:"FJ",m:"Manifest",d:"out",fam:"customs"},
+ {n:"FJ Customs Import Manifest",p:"Fiji Revenue & Customs",r:"FJ",m:"Manifest",d:"out",fam:"customs"},
+ {n:"NC Customs Import Manifest",p:"New Caledonian Customs",r:"NC",m:"Manifest",d:"out",fam:"customs"},
+ {n:"NZ Cargo Report Export (CRE)",p:"New Zealand Customs",r:"NZ",m:"CRE",d:"out",fam:"customs"},
+ {n:"NZ Inward Cargo Report (ICR)",p:"New Zealand Customs",r:"NZ",m:"ICR",d:"out",fam:"customs"},
+ {n:"NZ Outward Cargo Report (OCR)",p:"New Zealand Customs",r:"NZ",m:"OCR",d:"out",fam:"customs"},
+ {n:"NZ Outward Cargo Report 2 (OCR)",p:"New Zealand Customs",r:"NZ",m:"OCR",d:"out",fam:"customs"},
+ {n:"PG Customs Import Manifest",p:"PNG Customs Service",r:"PG",m:"Manifest",d:"out",fam:"customs"},
+ {n:"PSA CUSCAR D11B",p:"PSA",r:"SG",m:"CUSCAR",d:"out",fam:"customs"},
+ {n:"SB Customs Import Manifest",p:"Solomon Is. Customs",r:"SB",m:"Manifest",d:"out",fam:"customs"},
+ {n:"TL Customs Import Manifest",p:"Timor Leste Customs",r:"TL",m:"Manifest",d:"out",fam:"customs"},
+ {n:"TO Customs Export Manifest",p:"Tonga Revenue & Customs",r:"TO",m:"Manifest",d:"out",fam:"customs"},
+ {n:"TO Customs Import Manifest",p:"Tonga Revenue & Customs",r:"TO",m:"Manifest",d:"out",fam:"customs"},
+ {n:"WS Customs Export Manifest",p:"Western Samoa",r:"WS",m:"Manifest",d:"out",fam:"customs"},
+ {n:"WS Customs Import Manifest",p:"Western Samoa",r:"WS",m:"Manifest",d:"out",fam:"customs"},
+ {n:"Agency Commission Accrual",p:"Phoenix → SAP",r:"Global",m:"Finance",d:"out",fam:"sap"},
+ {n:"SAP Revenue Voyage",p:"Phoenix → SAP",r:"Global",m:"Finance",d:"out",fam:"sap"},
+ {n:"SAP Revenue Voyage (MCN)",p:"Phoenix → SAP",r:"Global",m:"Finance",d:"out",fam:"sap"},
+ {n:"Invoice XML",p:"BSM Global",r:"Global",m:"Invoice XML",d:"out",fam:"sap"},
+ {n:"AS Finance Report",p:"American Samoa Govt",r:"AS",m:"Finance",d:"out",fam:"sap"},
+ {n:"VERMAS Outbound",p:"EP-VERMAS",r:"CN",m:"VERMAS",d:"out",fam:"vermas"},
+ {n:"VERMAS Outbound",p:"Ningbo Southeast",r:"CN",m:"VERMAS",d:"out",fam:"vermas"},
+ {n:"VERMAS Outbound",p:"Ningbo Yongtong",r:"CN",m:"VERMAS",d:"out",fam:"vermas"},
+ {n:"VERMAS Outbound",p:"Sinotrans East China",r:"CN",m:"VERMAS",d:"out",fam:"vermas"},
+ {n:"VERMAS Outbound",p:"Sinotrans Shanghai",r:"CN",m:"VERMAS",d:"out",fam:"vermas"},
+ {n:"VERMAS Outbound",p:"South East",r:"CN",m:"VERMAS",d:"out",fam:"vermas"},
+ {n:"VERMAS Outbound",p:"Southeast Shanghai",r:"CN",m:"VERMAS",d:"out",fam:"vermas"},
+ {n:"VERMAS Outbound",p:"Yongtong Ningbo",r:"CN",m:"VERMAS",d:"out",fam:"vermas"},
+ {n:"DG Export Manifest",p:"NSW Ports",r:"AU",m:"IFTDGN",d:"out",fam:"dg"},
+ {n:"DG Export Manifest",p:"Port of Brisbane",r:"AU",m:"IFTDGN",d:"out",fam:"dg"},
+ {n:"DG Export Manifest",p:"Victorian Ports (Melbourne)",r:"AU",m:"IFTDGN",d:"out",fam:"dg"},
+ {n:"DG Import Manifest",p:"NSW Ports",r:"AU",m:"IFTDGN",d:"out",fam:"dg"},
+ {n:"DG Import Manifest",p:"Port of Brisbane",r:"AU",m:"IFTDGN",d:"out",fam:"dg"},
+ {n:"DG Import Manifest",p:"Victorian Ports (Melbourne)",r:"AU",m:"IFTDGN",d:"out",fam:"dg"},
+ {n:"BE/NL Booking Request (Cont.)",p:"Boeckmans",r:"BE/NL",m:"IFTMBF",d:"in",fam:"other"},
+ {n:"BE/NL Booking Request (Non-Cont.)",p:"Boeckmans",r:"BE/NL",m:"IFTMBF",d:"in",fam:"other"},
+ {n:"Load List (COPRAR)",p:"Swire Shipping SEACOS",r:"Global",m:"COPRAR",d:"out",fam:"other"}
+];
+const catBody=document.getElementById("catBody");
+if(catBody){
+  catBody.innerHTML=CAT.map(x=>`<tr data-fam="${x.fam}"><td>${x.n}</td><td>${x.p}</td><td class="rg">${x.r}</td><td class="ty">${x.m}</td><td><span class="dr ${x.d}">${x.d==="unk"?"?":x.d}</span></td></tr>`).join("");
+  const famCounts={}; CAT.forEach(x=>famCounts[x.fam]=(famCounts[x.fam]||0)+1);
+  const catTotal=document.getElementById("catTotal"); if(catTotal)catTotal.textContent=CAT.length+" interfaces";
+  document.querySelectorAll("#fchips .fchip").forEach(c=>{
+    const f=c.dataset.fam, s=c.querySelector(".n");
+    if(s)s.textContent=(f==="all"?CAT.length:(famCounts[f]||0));
+    c.addEventListener("click",()=>{
+      document.querySelectorAll("#fchips .fchip").forEach(x=>x.setAttribute("aria-pressed","false"));
+      c.setAttribute("aria-pressed","true");
+      catBody.querySelectorAll("tr").forEach(tr=>{tr.style.display=(f==="all"||tr.dataset.fam===f)?"":"none";});
+    });
+  });
+  document.querySelectorAll("[data-fammembers]").forEach(el=>{
+    const members=CAT.filter(x=>x.fam===el.dataset.fammembers);
+    el.innerHTML=members.map(m=>`<span class="fi"><b>${m.p}</b> · ${m.r}</span>`).join("");
+  });
+}
+
+let activePb="foundations";
+const q=document.getElementById("q");
+const qcount=document.getElementById("qcount");
+const resultsEl=document.getElementById("results");
+let provFilter="all";
+let activeStage=null;
+
+function showPb(){
+  document.querySelectorAll(".pb").forEach(p=>{
+    p.classList.toggle("hidden", p.id!=="pb-"+activePb);
+  });
+}
+document.querySelectorAll(".pbtab").forEach(t=>{
+  t.addEventListener("click",()=>{
+    document.querySelectorAll(".pbtab").forEach(x=>x.setAttribute("aria-pressed","false"));
+    t.setAttribute("aria-pressed","true");
+    activePb=t.dataset.pb;
+    showPb();
+  });
+});
+
+/* pipeline -> filter by stage */
+document.querySelectorAll(".stage").forEach(st=>{
+  st.addEventListener("click",()=>{
+    const s=st.dataset.stage;
+    if(activeStage===s){activeStage=null;st.classList.remove("active");}
+    else{document.querySelectorAll(".stage").forEach(x=>x.classList.remove("active"));st.classList.add("active");activeStage=s;}
+    applyFilters();
+    document.querySelector(".col-head").scrollIntoView({behavior:"smooth",block:"start"});
+  });
+});
+
+/* provenance + stage in-place filtering (search is separate, below) */
+function applyFilters(){
+  document.querySelectorAll("[data-searchable]").forEach(el=>{
+    const prov=el.dataset.prov||"";
+    const stage=el.dataset.stage||"";
+    const matchProv=provFilter==="all"||prov===provFilter;
+    const matchStage=!activeStage||!stage||stage===activeStage;
+    const ok=matchProv&&matchStage;
+    el.classList.toggle("hidden",!ok);
+    if(el.classList.contains("hidden")&&el.nextElementSibling&&el.nextElementSibling.classList.contains("exp-row"))
+      el.nextElementSibling.classList.add("hidden");
+  });
+  const filtering=provFilter!=="all"||activeStage;
+  document.querySelectorAll(".layer").forEach(L=>{
+    const anyVisible=[...L.querySelectorAll(".screen")].some(s=>!s.classList.contains("hidden"));
+    const h=L.querySelector(".layer-h"), b=L.querySelector(".layer-body");
+    if(filtering){h.classList.toggle("open",anyVisible);b.classList.toggle("open",anyVisible);L.style.display=anyVisible?"":"none";}
+    else {L.style.display="";}
+  });
+}
+
+/* ---------------- cross-app knowledge search ---------------- */
+const TABLABEL={foundations:"Foundations",coarri:"COARRI → EMS",igm:"IGM → Customs",outbound:"Outbound → Tracker",inbound:"Inbound → EMS",interfaces:"Interfaces",mapping:"Mapping",setup:"Setup & layers",compare:"Compare",trainer:"Troubleshooter",reference:"Reference"};
+function cardTitle(card){
+  const h=card.querySelector(".hd h3")||card.querySelector(".qt")||card.querySelector(".sname")||card.querySelector("summary")||card.querySelector("h3");
+  if(!h) return "";
+  // for .sname, drop the .grp subtitle
+  const clone=h.cloneNode(true); clone.querySelectorAll(".grp").forEach(n=>n.remove());
+  return clone.textContent.trim();
+}
+function buildIndex(){
+  const idx=[];
+  document.querySelectorAll("[data-searchable]").forEach(card=>{
+    const pb=card.closest(".pb");
+    const tab=pb?pb.id.replace("pb-",""):"reference";
+    const title=cardTitle(card);
+    const raw=card.textContent.replace(/\s+/g," ").trim();
+    idx.push({card,tab,title,titleL:title.toLowerCase(),textL:raw.toLowerCase(),raw,kw:(card.dataset.keywords||"").toLowerCase()});
+  });
+  // also index glossary <details> and catalogue rows for pinpoint hits
+  document.querySelectorAll(".gloss details").forEach(d=>{
+    const card=d.closest("[data-searchable]"); const pb=card?card.closest(".pb"):null;
+    const tab=pb?pb.id.replace("pb-",""):"reference";
+    const t=d.querySelector("summary")?d.querySelector("summary").textContent.trim():"";
+    const raw=d.textContent.replace(/\s+/g," ").trim();
+    idx.push({card:card||d,tab,title:t,titleL:t.toLowerCase(),textL:raw.toLowerCase(),raw,kw:t.toLowerCase(),jump:d});
+  });
+  return idx;
+}
+/* plain-language -> jargon synonyms; typing the key also matches the values */
+const ALIASES={
+ "temperature":["reefer","tmp","rng"],"reefer":["temperature","tmp","rng"],
+ "weight":["vgm","vermas","verified gross mass"],"vgm":["vermas","weight"],"vermas":["vgm","weight"],
+ "customs":["igm","cuscar","manifest","ens","ams"],"manifest":["igm","cuscar","ifcsum","ifcsum"],
+ "container type":["iso 6346","iso code","equipment"],"container":["equipment","eqp","iso"],"box":["container","equipment"],
+ "port":["un/locode","port code","port mapping"],"location":["un/locode","port"],
+ "booking":["iftmin","iftmbc","bc","customer service"],
+ "gate":["codeco","ems gate"],"discharge":["coarri","dche"],"load":["coprar","lode","load list"],
+ "dangerous goods":["iftdgn","dg"],"hazardous":["iftdgn","dg","dangerous"],"dg":["iftdgn","dangerous"],
+ "acknowledgement":["contrl","aperak"],"acknowledgment":["contrl","aperak"],"ack":["contrl","aperak"],
+ "reject":["error res","aperak","view error"],"rejected":["error res","aperak"],
+ "transmit":["sftp","ftp","endpoint","transport"],"transmission":["sftp","ftp","endpoint","transport"],"delivery":["resend","sftp","endpoint"],
+ "schedule":["trigger","schedule edi","voyage"],"vessel":["schedules","voyage"],"voyage":["schedules","bound"],
+ "finance":["sap","phoenix","agency commission","disbursement","invoice"],"accounting":["sap","phoenix","disbursement"],"invoice":["sap","invoice xml"],"sap":["phoenix","finance"],
+ "depot":["depot mapping","dep-ter","terminal"],"terminal":["depot","terminal"],
+ "x12":["ansi","ansi322","griffin"],"ansi":["x12","ansi322"],
+ "standard":["edifact","iso 6346","un/locode"],"edifact":["segment","unb","unh","interchange"],"segment":["bgm","dtm","loc","eqd","unh"],
+ "duplicate":["action not required","exact","logical"],"correction":["reprocess","error movements","auto reprocess"],"fix":["solution","reprocess"],
+ "owner":["owning module","which module"],"partner":["interfaces","partner directory"],"engine":["idb","data query"],"idb":["engine","generation"]
+};
+let INDEX=null;
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function highlight(text,tokens){
+  let out=esc(text);
+  tokens.forEach(t=>{
+    const re=new RegExp("("+t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","gi");
+    out=out.replace(re,"<mark>$1</mark>");
+  });
+  return out;
+}
+function snippet(entry,tokens){
+  const tl=entry.textL, raw=entry.raw;
+  let pos=-1;
+  for(const t of tokens){const p=tl.indexOf(t); if(p>=0&&(pos<0||p<pos))pos=p;}
+  if(pos<0) return highlight(raw.slice(0,120),tokens)+(raw.length>120?"…":"");
+  const start=Math.max(0,pos-45), end=Math.min(raw.length,pos+95);
+  return (start>0?"…":"")+highlight(raw.slice(start,end),tokens)+(end<raw.length?"…":"");
+}
+function doSearch(){
+  const query=q.value.trim().toLowerCase();
+  const tokens=query.split(/\s+/).filter(t=>t.length>=2);
+  q.setAttribute("aria-expanded","false");
+  if(!tokens.length){resultsEl.classList.remove("show");resultsEl.innerHTML="";qcount.textContent="";return;}
+  if(!INDEX)INDEX=buildIndex();
+  // expand plain-language terms to jargon
+  const matchSet=new Set(tokens);
+  for(const key in ALIASES){ if(query.includes(key)||tokens.includes(key)) ALIASES[key].forEach(x=>matchSet.add(x)); }
+  const mterms=[...matchSet];
+  const scored=[];
+  INDEX.forEach(e=>{
+    let sc=0;
+    mterms.forEach(t=>{
+      if(e.titleL.includes(t))sc+=12;
+      if(e.kw.includes(t))sc+=5;
+      if(e.textL.includes(t))sc+=2;
+    });
+    // bonus: all typed tokens present
+    if(tokens.every(t=>e.titleL.includes(t)||e.kw.includes(t)||e.textL.includes(t)))sc+=3;
+    if(sc>0)scored.push({e,sc});
+  });
+  scored.sort((a,b)=>b.sc-a.sc);
+  const top=scored.slice(0,24);
+  qcount.textContent=scored.length?scored.length+" result"+(scored.length===1?"":"s"):"";
+  if(!top.length){resultsEl.innerHTML='<div class="rempty">No matches. Try a code (22G1), a partner (Descartes), an error (PA) or a concept (duplicate).</div>';resultsEl.classList.add("show");return;}
+  // group by tab, preserving best-first order
+  const order=[], groups={};
+  top.forEach(({e,sc})=>{if(!groups[e.tab]){groups[e.tab]=[];order.push(e.tab);}groups[e.tab].push(e);});
+  let html="";
+  order.forEach(tab=>{
+    html+=`<div class="rgroup">${TABLABEL[tab]||tab}</div>`;
+    groups[tab].forEach(e=>{
+      const t=e.title||"(section)";
+      html+=`<button class="ritem" data-tab="${e.tab}"><span class="rt">${highlight(t,mterms)}<span class="rtab">${TABLABEL[e.tab]||e.tab}</span></span><span class="rsnip">${snippet(e,mterms)}</span></button>`;
+    });
+  });
+  resultsEl.innerHTML=html;
+  resultsEl.classList.add("show");
+  q.setAttribute("aria-expanded","true");
+  const items=[...resultsEl.querySelectorAll(".ritem")];
+  const flat=[]; order.forEach(tab=>groups[tab].forEach(e=>flat.push(e)));
+  items.forEach((btn,i)=>btn.addEventListener("click",()=>goTo(flat[i])));
+  resultsEl._flat=flat; resultsEl._sel=-1;
+}
+function goTo(e){
+  if(!e)return;
+  resultsEl.classList.remove("show"); q.value=""; qcount.textContent=""; q.setAttribute("aria-expanded","false");
+  // reset filters so target is visible
+  provFilter="all"; activeStage=null;
+  document.querySelectorAll("#provSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.prov==="all"?"true":"false"));
+  document.querySelectorAll(".stage").forEach(x=>x.classList.remove("active"));
+  applyFilters();
+  if(e.tab!=="reference"){
+    activePb=e.tab;
+    document.querySelectorAll(".pbtab").forEach(x=>x.setAttribute("aria-pressed",x.dataset.pb===e.tab?"true":"false"));
+  }
+  showPb();
+  // open reference layer / glossary detail if needed
+  const lb=e.card.closest&&e.card.closest(".layer-body");
+  if(lb){lb.classList.add("open"); if(lb.previousElementSibling)lb.previousElementSibling.classList.add("open");}
+  if(e.jump){e.jump.open=true;}
+  setTimeout(()=>{
+    e.card.scrollIntoView({behavior:"smooth",block:"center"});
+    e.card.classList.add("flash"); setTimeout(()=>e.card.classList.remove("flash"),1600);
+  },60);
+}
+q.addEventListener("input",()=>{INDEX=buildIndex();doSearch();});
+q.addEventListener("focus",()=>{if(q.value.trim())doSearch();});
+q.addEventListener("keydown",ev=>{
+  const items=[...resultsEl.querySelectorAll(".ritem")];
+  if(ev.key==="Escape"){resultsEl.classList.remove("show");q.blur();return;}
+  if(ev.key==="Enter"){const f=resultsEl._flat; if(f&&f.length){const i=resultsEl._sel>=0?resultsEl._sel:0;goTo(f[i]);}return;}
+  if(!items.length)return;
+  if(ev.key==="ArrowDown"||ev.key==="ArrowUp"){
+    ev.preventDefault();
+    resultsEl._sel=(resultsEl._sel+(ev.key==="ArrowDown"?1:-1)+items.length)%items.length;
+    items.forEach((b,i)=>b.classList.toggle("sel",i===resultsEl._sel));
+    items[resultsEl._sel].scrollIntoView({block:"nearest"});
+  }
+});
+document.addEventListener("click",ev=>{if(!ev.target.closest(".search"))resultsEl.classList.remove("show");});
+
+document.querySelectorAll("#provSeg button").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll("#provSeg button").forEach(x=>x.setAttribute("aria-pressed","false"));
+    btn.setAttribute("aria-pressed","true");
+    provFilter=btn.dataset.prov;
+    try{localStorage.setItem("edi.prov",provFilter);}catch(e){}
+    applyFilters();
+  });
+});
+
+/* ---------------- theme ---------------- */
+const root=document.documentElement, themeIcon=document.getElementById("themeIcon");
+const SUN='<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/>';
+const MOON='<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+function setTheme(t){root.setAttribute("data-theme",t);themeIcon.innerHTML=t==="dark"?MOON:SUN;try{localStorage.setItem("edi.theme",t);}catch(e){}}
+document.getElementById("themeBtn").addEventListener("click",()=>setTheme(root.getAttribute("data-theme")==="dark"?"light":"dark"));
+
+/* ---------------- restore prefs ---------------- */
+try{
+  const t=localStorage.getItem("edi.theme"); if(t)setTheme(t);
+  const p=localStorage.getItem("edi.prov");
+  if(p){const b=document.querySelector(`#provSeg button[data-prov="${p}"]`); if(b)b.click();}
+}catch(e){}
+</script>
+</body>
+</html>
